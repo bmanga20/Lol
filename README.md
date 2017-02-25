@@ -1,4 +1,9 @@
-This branch (master) was previously known as 'split-packages'. The main problem preventing us from creating a new Hackage release based on this branch is that microbenchmark performance is severely degraded relative to the fast-microbenechmarks branch.
+
+[![Build Status](https://travis-ci.org/cpeikert/Lol.svg?branch=alchemy)](https://travis-ci.org/cpeikert/Lol)
+
+This branch (alchemy) contains a new package which is a fresh attempt at an FHE compiler.
+Eventually, it should replace the fhe-compiler package, and perhaps the ad-hoc
+DSL in the HomomPRF example of lol-apps.
 
 --------------------------------------------------------------------------------
 
