@@ -1,3 +1,16 @@
+{-|
+Module      : Crypto.Lol.Utils.PrettyPrint
+Description : Pretty-printing for benchmark results.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Pretty-printing for benchmark results.
+-}
+
 {-# LANGUAGE BangPatterns    #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -29,11 +42,9 @@ import Data.Maybe
 import Statistics.Resampling.Bootstrap (Estimate(..))
 
 -- | Verbosity of benchmark output.
--- 'Progress'
--- 'Abridged' prints
-data Verb = Progress  -- | prints a '.' when each benchmark completes
-          | Abridged  -- | prints a one-line summary for each benchmark
-          | Full      -- | prints full criterion output for each benchmark
+data Verb = Progress  -- ^ prints a '.' when each benchmark completes
+          | Abridged  -- ^ prints a one-line summary for each benchmark
+          | Full      -- ^ prints full criterion output for each benchmark
           deriving (Eq)
 
 -- | Options for printing benchmark summary

@@ -5,8 +5,8 @@ name:                lol-benches
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.0.0.1
-synopsis:            A library for benchmarking <https://hackage.haskell.org/package/lol Λ ∘ λ>.
+version:             0.0.0.4
+synopsis:            A library for benchmarking <https://hackage.haskell.org/package/lol lol>.
 homepage:            https://github.com/cpeikert/Lol
 Bug-Reports:         https://github.com/cpeikert/Lol/issues
 license:             GPL-2
@@ -20,7 +20,7 @@ build-type:          Simple
 extra-source-files:  README, CHANGES.md
 cabal-version:       >= 1.10
 description:
-    This library contains code to benchmark <https://hackage.haskell.org/package/lol Λ ∘ λ (Lol)>.
+    This library contains code to benchmark <https://hackage.haskell.org/package/lol lol>.
     It is designed so that third-party tensors can be easily benchmarked using the same framework.
     For examples of how to use this library, see the benchmarks for
     <https://hackage.haskell.org/package/lol-cpp lol-cpp>.
@@ -37,8 +37,6 @@ library
   exposed-modules:
     Crypto.Lol.Benchmarks
     Crypto.Lol.Benchmarks.CycBenches
-    Crypto.Lol.Benchmarks.SimpleTensorBenches
-    Crypto.Lol.Benchmarks.SimpleUCycBenches
     Crypto.Lol.Benchmarks.Standard
     Crypto.Lol.Benchmarks.TensorBenches
     Crypto.Lol.Benchmarks.UCycBenches
@@ -49,30 +47,18 @@ library
     Crypto.Lol.Utils.PrettyPrint
 
   build-depends:
-    ansi-terminal,
-    base,
-    containers,
-    criterion,
-    crypto-api,
-    deepseq,
-    DRBG,
-    lol,
-    MonadRandom,
-    split,
-    statistics,
-    transformers
-
--- EAC: This really belongs in lol.cabal, but due to a cabal/stack bug, it can't right now.
-Benchmark bench-lol
-  type:               exitcode-stdio-1.0
-  default-language:   Haskell2010
-  main-is:            Main.hs
-  hs-source-dirs:     exec
-
-  ghc-options: -O2 -funfolding-creation-threshold=15000 -funfolding-use-threshold=1000
-
-  build-depends:
-    base,
-    DRBG,
-    lol,
-    lol-benches
+    ansi-terminal < 0.7,
+    base >= 4.9 && < 5,
+    containers < 0.6,
+    criterion < 1.2,
+    crypto-api < 0.14,
+    deepseq < 1.5,
+    DRBG < 0.6,
+    lol >= 0.6.0.0 && < 0.7,
+    MonadRandom < 0.6,
+    split < 0.3,
+    statistics < 0.14,
+    -- EAC: lol-benches does NOT depend on vector. However, cabal can't resolve
+    -- dependencies without some help on the vector version. This is a bottleneck
+    -- preventing us from putting lol-benches on stackage.
+    vector < 0.12.0.0

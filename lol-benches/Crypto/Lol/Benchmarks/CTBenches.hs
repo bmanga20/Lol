@@ -1,3 +1,17 @@
+{-|
+Module      : Crypto.Lol.Benchmarks.CTBenches
+Description : Benchmarks for the CPP Tensor.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Benchmarks for the CPP Tensor, without harness (for performance comparison).
+This may require some fiddling in exports of 'Tensor' instances to compile.
+-}
+
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
@@ -7,13 +21,10 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
--- benchmarks at the lowest level, without harness. This may require some
--- fiddling in exports of 'Tensor' instances to compile.
-
 module Crypto.Lol.Benchmarks.CTBenches (ctBenches) where
 
 import Control.Applicative
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 
 import Crypto.Lol.Cyclotomic.Tensor
 import Crypto.Lol.Prelude

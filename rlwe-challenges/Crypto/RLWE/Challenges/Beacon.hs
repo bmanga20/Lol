@@ -1,10 +1,21 @@
+{-|
+Module      : Crypto.RLWE.Challenges.Beacon
+Description : Utility functions for working with the NIST randomness beacon.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Utility functions for working with the
+<http://www.nist.gov/itl/csd/ct/nist_beacon.cfm NIST Randomness Beacon>.
+-}
+
+
 {-# LANGUAGE FlexibleContexts #-}
 
--- | Utility functions for working with the
--- <http://www.nist.gov/itl/csd/ct/nist_beacon.cfm NIST Randomness
--- Beacon>.
-
-module Beacon where
+module Crypto.RLWE.Challenges.Beacon where
 
 import Data.Int
 import Data.Time.Calendar    (fromGregorian)
@@ -26,6 +37,7 @@ beaconInterval = 60
 -- | Represents a byte offset in a beacon output at a particular time.
 data BeaconAddr = BA !BeaconEpoch !BeaconOffset deriving (Eq, Show)
 
+-- | Tests whether a 'BeaconAddr' is valid or not.
 validBeaconAddr :: BeaconAddr -> Bool
 validBeaconAddr (BA epoch offset) =
   (epoch `mod` beaconInterval == 0) && offset >= 0 && offset < bytesPerBeacon

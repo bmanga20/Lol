@@ -5,8 +5,8 @@ name:                lol-apps
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.1.0
-synopsis:            Lattice-based cryptographic applications using Lol.
+version:             0.2.0.2
+synopsis:            Lattice-based cryptographic applications using <https://hackage.haskell.org/package/lol lol>.
 homepage:            https://github.com/cpeikert/Lol
 Bug-Reports:         https://github.com/cpeikert/Lol/issues
 license:             GPL-2
@@ -21,7 +21,7 @@ extra-source-files:  README, CHANGES.md, SHE.proto, HomomPRF.proto
 cabal-version:       >= 1.10
 description:
     This library contains example cryptographic applications built using
-    <https://hackage.haskell.org/package/lol Λ ∘ λ>  (Lol),
+    <https://hackage.haskell.org/package/lol lol>,
     a general-purpose library for ring-based lattice cryptography.
 
 source-repository head
@@ -65,17 +65,17 @@ library
     Crypto.Proto.SHE.TunnelInfo
 
   build-depends:
-    base>=4.8 && <5,
-    containers,
-    deepseq >= 1.4.1.1 && <1.5,
-    lol >= 0.3,
-    MonadRandom >= 0.2 && < 0.5,
-    mtl,
+    base >= 4.9 && < 5,
+    containers < 0.6,
+    deepseq >= 1.4.1.1 && < 1.5,
+    lol >= 0.6.0.0 && < 0.7,
+    MonadRandom >= 0.2 && < 0.6,
+    mtl < 2.3,
     numeric-prelude >= 0.4.2 && < 0.5,
-    protocol-buffers,
-    protocol-buffers-descriptor,
-    singletons,
-    split
+    protocol-buffers < 2.5,
+    protocol-buffers-descriptor < 2.5,
+    singletons < 2.3,
+    split < 0.3
 
 test-suite test-apps
   type:             exitcode-stdio-1.0
@@ -88,26 +88,15 @@ test-suite test-apps
   ghc-options:      -threaded -rtsopts
 
   build-depends:
-    arithmoi,
-    base,
-    constraints,
-    deepseq,
-    DRBG,
-    lol,
+    base >= 4.9 && < 5,
+    lol >= 0.6.0.0 && < 0.7,
     lol-apps,
-    lol-cpp,
-    lol-repa,
-    lol-tests,
-    MonadRandom,
-    mtl,
-    numeric-prelude,
-    QuickCheck >= 2.8 && < 2.9,
-    random,
-    repa,
-    singletons,
-    test-framework >= 0.8 && < 0.9,
-    test-framework-quickcheck2 >= 0.3 && < 0.4,
-    vector
+    lol-cpp < 0.1,
+    lol-repa < 0.1,
+    lol-tests < 0.1,
+    MonadRandom < 0.6,
+    numeric-prelude < 0.5,
+    test-framework >= 0.8 &&  < 0.9
 
 Benchmark bench-apps
   type:             exitcode-stdio-1.0
@@ -119,29 +108,21 @@ Benchmark bench-apps
 
 --  if flag(llvm)
 --    ghc-options: -fllvm -optlo-O3
-  ghc-options: -threaded -rtsopts
+  ghc-options: -threaded -rtsopts -O2
 --  ghc-options: -O2 -Odph -funbox-strict-fields -fwarn-dodgy-imports -rtsopts
 --  ghc-options: -fno-liberate-case -funfolding-use-threshold1000 -funfolding-keeness-factor1000
 
   build-depends:
-    arithmoi,
-    base,
-    containers,
-    criterion,
-    deepseq,
-    DRBG,
-    lol,
+    base >= 4.9 && < 5,
+    DRBG < 0.6,
+    lol >= 0.6.0.0 && < 0.7,
     lol-apps,
-    lol-benches,
-    lol-cpp,
-    lol-repa,
-    MonadRandom,
-    mtl,
-    numeric-prelude,
-    singletons,
-    transformers,
-    vector,
-    repa
+    lol-benches >= 0.0.0.3 && < 0.1,
+    lol-cpp < 0.1,
+    lol-repa < 0.1,
+    MonadRandom < 0.6,
+    mtl < 2.3,
+    numeric-prelude < 0.5
 
 executable homomprf
   hs-source-dirs: examples
@@ -150,22 +131,21 @@ executable homomprf
   ghc-options: -main-is HomomPRFMain
   other-modules: HomomPRFParams
 
-  ghc-options: -threaded -rtsopts
+  ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    arithmoi,
-    base,
-    deepseq,
-    DRBG,
-    filepath,
-    lol,
+    base >= 4.9 && < 5,
+    deepseq < 1.5,
+    DRBG < 0.6,
+    filepath < 1.5,
+    lol >= 0.6.0.0 && < 0.7,
     lol-apps,
-    lol-cpp,
-    MonadRandom,
-    mtl,
-    numeric-prelude,
-    singletons,
-    time
+    lol-cpp < 0.1,
+    MonadRandom < 0.6,
+    mtl < 2.3,
+    numeric-prelude < 0.5,
+    singletons < 2.3,
+    time < 1.9
 
 executable khprf
   hs-source-dirs: examples
@@ -173,18 +153,17 @@ executable khprf
   main-is: KHPRFMain.hs
   ghc-options: -main-is KHPRFMain
 
-  ghc-options: -threaded -rtsopts
+  ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    arithmoi,
-    base,
-    deepseq,
-    lol,
+    base >= 4.9 && < 5,
+    deepseq < 1.5,
+    lol >= 0.6.0.0 && < 0.7,
     lol-apps,
-    lol-cpp,
-    MonadRandom,
-    mtl,
-    numeric-prelude
+    lol-cpp < 0.1,
+    MonadRandom < 0.6,
+    mtl < 2.3,
+    numeric-prelude < 0.5
 
 executable symmshe
   hs-source-dirs:   examples
@@ -192,13 +171,12 @@ executable symmshe
   main-is:          SHEMain.hs
   ghc-options: -main-is SHEMain
 
-  ghc-options: -threaded -rtsopts
+  ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    arithmoi,
-    base,
-    lol,
+    base >= 4.9 && < 5,
+    lol >= 0.6.0.0 && < 0.7,
     lol-apps,
-    lol-cpp,
-    MonadRandom,
-    numeric-prelude
+    lol-cpp < 0.1,
+    MonadRandom < 0.6,
+    numeric-prelude < 0.5

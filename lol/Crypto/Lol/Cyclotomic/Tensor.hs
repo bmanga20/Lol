@@ -1,3 +1,24 @@
+{-|
+Module      : Crypto.Lol.Cyclotomic.Tensor
+Description : Interface for cyclotomic tensors, and
+              helper functions for tensor indexing.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\Tw{\text{Tw}} \)
+  \( \def\Tr{\text{Tr}} \)
+  \( \def\CRT{\text{CRT}} \)
+  \( \def\O{\mathcal{O}} \)
+
+Interface for cyclotomic tensors, and helper functions for tensor
+indexing.
+-}
+
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE FlexibleContexts        #-}
@@ -12,15 +33,6 @@
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
--- | \( \def\Z{\mathbb{Z}} \)
---   \( \def\Tw{\text{Tw}} \)
---   \( \def\Tr{\text{Tr}} \)
---   \( \def\CRT{\text{CRT}} \)
---   \( \def\O{\mathcal{O}} \)
---
--- Interface for cyclotomic tensors, and helper functions for tensor
--- indexing.
-
 module Crypto.Lol.Cyclotomic.Tensor
 ( Tensor(..)
 -- * Top-level CRT functions
@@ -30,7 +42,7 @@ module Crypto.Lol.Cyclotomic.Tensor
 , Kron, indexK, gCRTK, gInvCRTK, twCRTs
 -- * Tensor indexing
 , zmsToIndexFact
-, toIndexPair, fromIndexPair, indexInfo
+, indexInfo
 , extIndicesPowDec, extIndicesCRT, extIndicesCoeffs
 , baseIndicesPow, baseIndicesDec, baseIndicesCRT
 , digitRev

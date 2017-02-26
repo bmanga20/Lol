@@ -1,3 +1,16 @@
+{-|
+Module      : Crypto.Lol.Benchmarks.ZqBenches
+Description : Benchmarks for modular arithmetic.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Benchmarks for modular arithmetic.
+-}
+
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -12,7 +25,7 @@ import Crypto.Lol
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Array.Repa as R
 

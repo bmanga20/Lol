@@ -1,3 +1,16 @@
+{-|
+Module      : Crypto.Lol.Benchmarks.CycBenches
+Description : Benchmarks for the 'Cyc' interface.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Benchmarks for the 'Cyc' interface.
+-}
+
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
@@ -7,12 +20,10 @@
 
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
--- | Benchmarks for the 'Cyc' interface.
-
 module Crypto.Lol.Benchmarks.CycBenches (cycBenches1, cycBenches2) where
 
 import Control.Applicative
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 
 import Crypto.Lol
 import Crypto.Lol.Benchmarks

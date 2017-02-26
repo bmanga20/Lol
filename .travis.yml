@@ -1,0 +1,51 @@
+# This is the simple Travis configuration, which is intended for use
+# on applications which do not require cross-platform and
+# multiple-GHC-version support. For more information and other
+# options, see:
+#
+# https://docs.haskellstack.org/en/stable/travis_ci/
+#
+# Copy these contents into the root directory of your Github project in a file
+# named .travis.yml
+
+# Use new container infrastructure to enable caching
+sudo: required
+
+# Do not choose a language; we provide our own build tools.
+language: generic
+dist: trusty
+
+# Caching so the next build will be fast too.
+cache:
+  directories:
+  - $HOME/.stack
+
+# EAC: By default, TravisCI has gcc/g++-4.6.3, which is too old for lol-cpp.
+# I tried explicitly using gcc-4.9, but couldn't install unix-2.7.0 with that
+# (linking errors). Instead, I'm using "dist:trusty", which has a newer version
+# of gcc (4.8.4) by default.
+
+# Ensure necessary system libraries are present
+addons:
+  apt:
+#    sources:
+#      - ubuntu-toolchain-r-test
+    packages:
+#      - gcc-4.9
+#      - g++-4.9
+      - libgmp-dev
+
+before_install:
+# Download and unpack the stack executable
+- mkdir -p ~/.local/bin
+- export PATH=$HOME/.local/bin:$PATH
+- travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+
+install:
+# Build dependencies
+- stack --no-terminal --install-ghc test --only-dependencies
+
+script:
+# Build the package, its tests, and its docs and run the tests
+# --fast is about 33% faster (compile time + test time) than without --fast
+- travis_wait 20 stack --no-terminal test --haddock --no-haddock-deps --fast

@@ -1,3 +1,16 @@
+{-|
+Module      : Crypto.Lol.Cyclotomic.Tensor.Repa.Instances
+Description : RT-specific instances.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+RT-specific instances.
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PolyKinds                  #-}
@@ -26,16 +39,16 @@ import Data.Vector.Unboxed.Deriving
 
 
 instance (R.Elt a) => R.Elt (Complex a) where
-    touch (Complex c) = do
+    touch (Complex' c) = do
         touch $ C.real c
         touch $ C.imag c
-    zero = Complex $ R.zero C.+: R.zero
-    one = Complex $ R.one C.+: R.zero
+    zero = Complex' $ R.zero C.+: R.zero
+    one = Complex' $ R.one C.+: R.zero
 
 derivingUnbox "Complex"
   [t| forall a . (U.Unbox a) => Complex a -> (a, a) |]
-  [| \ (Complex x) -> (C.real x, C.imag x) |]
-  [| \ (r, i) -> Complex $ r C.+: i |]
+  [| \ (Complex' x) -> (C.real x, C.imag x) |]
+  [| \ (r, i) -> Complex' $ r C.+: i |]
 
 
 

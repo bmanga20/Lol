@@ -1,3 +1,17 @@
+{-|
+Module      : Crypto.Lol.Benchmarks.SimpleUCycBenches
+Description : Benchmarks for the 'UCyc' interface, without benchmark harness.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Benchmarks for the 'UCyc' interface, without benchmark
+harness (for performance comparison).
+-}
+
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
@@ -7,13 +21,10 @@
 
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
--- | Benchmarks for the 'UCyc' interface. These benchmarks do not use the
--- benchmark harness, so they may perform differently than UCycBenches.hs.
-
 module Crypto.Lol.Benchmarks.SimpleUCycBenches (simpleUCycBenches1, simpleUCycBenches2) where
 
 import Control.Applicative
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 
 import Crypto.Lol.Prelude
 import Crypto.Lol.Cyclotomic.UCyc

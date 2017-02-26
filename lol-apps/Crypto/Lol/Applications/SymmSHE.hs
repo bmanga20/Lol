@@ -1,3 +1,19 @@
+{-|
+Module      : Crypto.Lol.Applications.SymmSHE
+Description : Symmetric-key homomorphic encryption.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+  \( \def\O{\mathcal{O}} \)
+
+Symmetric-key somewhat homomorphic encryption.  See Section 4 of
+<http://eprint.iacr.org/2015/1134> for mathematical description.
+-}
+
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -11,9 +27,6 @@
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
--- | Symmetric-key somewhat homomorphic encryption.  See Section 4 of
--- http://eprint.iacr.org/2015/1134 for mathematical description.
-
 module Crypto.Lol.Applications.SymmSHE
 (
 -- * Data types
@@ -23,7 +36,7 @@ SK, PT, CT -- don't export constructors!
 , encrypt
 , errorTerm, errorTermUnrestricted, decrypt, decryptUnrestricted
 -- * Arithmetic with public values
-, addScalar, addPublic, mulScalar, mulPublic
+, addPublic, mulPublic
 -- * Modulus switching
 , rescaleLinearCT, modSwitchPT
 -- * Key switching
@@ -37,7 +50,7 @@ SK, PT, CT -- don't export constructors!
 -- * Constraint synonyms
 , GenSKCtx, EncryptCtx, ToSDCtx, ErrorTermCtx
 , DecryptCtx, DecryptUCtx
-, AddScalarCtx, AddPublicCtx, MulScalarCtx, MulPublicCtx, ModSwitchPTCtx
+, AddPublicCtx, MulPublicCtx, ModSwitchPTCtx
 , KeySwitchCtx, KSHintCtx
 , GenTunnelInfoCtx, TunnelCtx
 , SwitchCtx, LWECtx -- these are internal, but exported for better docs
@@ -60,7 +73,7 @@ import qualified Crypto.Proto.SHE.TunnelInfo as P
 import Control.Applicative  hiding ((*>))
 import Control.DeepSeq
 import Control.Monad        as CM
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 import Data.Maybe
 import Data.Traversable     as DT
 import Data.Typeable
@@ -246,7 +259,7 @@ modSwitchPT ct = let CT MSD k l c = toMSD ct in
 
 ---------- Key switching ----------
 
--- | Constraint synonym for generating an LWE sample.
+-- | Constraint synonym for generating a ring-LWE sample.
 type LWECtx t m' z zq =
   (ToInteger z, Reduce z zq, Ring zq, Random zq, Fact m', CElt t z, CElt t zq)
 
@@ -346,21 +359,10 @@ keySwitchQuadCirc (KSQHint hint) ct =
   in CT MSD k l $ P.fromCoeffs [c0,c1] + rescaleLinearMSD (switch hint c2')
 
 ---------- Misc homomorphic operations ----------
--- | Constraint synonym for adding a public scalar to a ciphertext.
-type AddScalarCtx t m' zp zq =
-  (Lift' zp, Reduce (LiftOf zp) zq,
-   CElt t zp, CElt t (LiftOf zp), ToSDCtx t m' zp zq)
-
--- | Homomorphically add a public \(\mathbb{Z}_p\) value to an encrypted value.
-addScalar :: forall t m m' zp zq . (AddScalarCtx t m' zp zq)
-          => zp -> CT m zp (Cyc t m' zq) -> CT m zp (Cyc t m' zq)
-addScalar b ct =
-  let CT LSD k l c = toLSD ct
-      b' = iterate mulG (scalarCyc $ b * recip l) !! k :: Cyc t m' zp
-  in CT LSD k l $ c + (P.const $ reduce $ liftPow b')
 
 -- | Constraint synonym for adding a public value to an encrypted value.
-type AddPublicCtx t m m' zp zq = (AddScalarCtx t m' zp zq, m `Divides` m')
+type AddPublicCtx t m m' zp zq = (Lift' zp, Reduce (LiftOf zp) zq,
+   CElt t zp, CElt t (LiftOf zp), ToSDCtx t m' zp zq, m `Divides` m')
 
 -- | Homomorphically add a public \( R_p \) value to an encrypted
 -- value.
@@ -373,14 +375,9 @@ addPublic b ct = let CT LSD k l c = toLSD ct in
       b' :: Cyc t m zq = reduce $ liftPow $ linv * (iterate mulG b !! k)
   in CT LSD k l $ c + P.const (embed b')
 
--- | Constraint synonym for multiplying a public scalar value with
--- an encrypted value.
-type MulScalarCtx t m' zp zq =
-  (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq)
-
 -- | Homomorphically multiply a public \(\mathbb{Z}_p\) value to an
 -- encrypted value.
-mulScalar :: (MulScalarCtx t m' zp zq)
+mulScalar :: (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq)
   => zp -> CT m zp (Cyc t m' zq) -> CT m zp (Cyc t m' zq)
 mulScalar a (CT enc k l c) =
   let a' = scalarCyc $ reduce $ lift a
@@ -388,7 +385,8 @@ mulScalar a (CT enc k l c) =
 
 -- | Constraint synonym for multiplying a public value with an encrypted value.
 type MulPublicCtx t m m' zp zq =
-  (MulScalarCtx t m' zp zq, m `Divides` m', CElt t zp, CElt t (LiftOf zp))
+  (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq, m `Divides` m', 
+   CElt t zp, CElt t (LiftOf zp))
 
 -- | Homomorphically multiply an encrypted value by a public \( R_p \)
 -- value.
@@ -406,7 +404,8 @@ mulGCT (CT enc k l c) = CT enc (k+1) l $ mulG <$> c
 
 ---------- NumericPrelude instances ----------
 
-instance (Eq zp, MulScalarCtx t m' zp zq, m `Divides` m', ToSDCtx t m' zp zq)
+instance (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq, -- mulScalar
+          Eq zp, m `Divides` m', ToSDCtx t m' zp zq)
          => Additive.C (CT m zp (Cyc t m' zq)) where
 
   zero = CT LSD 0 one zero
@@ -442,6 +441,7 @@ instance (ToSDCtx t m' zp zq, Additive (CT m zp (Cyc t m' zq)))
 
 ---------- Ring switching ----------
 
+-- | Constraint synonym for 'absorbGFactors'.
 type AbsorbGCtx t m' zp zq =
   (Lift' zp, IntegralDomain zp, Reduce (LiftOf zp) zq, Ring zq,
    Fact m', CElt t (LiftOf zp), CElt t zp, CElt t zq)
@@ -490,7 +490,7 @@ twaceCT :: (CElt t zq, r `Divides` r', s' `Divides` r',
 twaceCT (CT d 0 l c) = CT d 0 l (twace <$> c)
 twaceCT _ = error "twaceCT requires 0 factors of g; call absorbGFactors first"
 
-
+-- | Auxilliary data needed to tunnel from \(\O_{r'}\) to \(\O_{s'}\).
 data TunnelInfo gad t (e :: Factored) (r :: Factored) (s :: Factored) e' r' s' zp zq =
   TInfo (Linear t zq e' r' s') [Tagged gad [Polynomial (Cyc t s' zq)]]
 
@@ -499,6 +499,7 @@ instance (NFData (Linear t zq e' r' s'), NFData (Cyc t s' zq))
   rnf (TInfo l t) = rnf l `seq` rnf t
 
 -- EAC: `e' ~ (e * ...) is not needed in this module, but it is needed as use sites...
+-- | Constraint synonym for generating 'TunnelInfo'.
 type GenTunnelInfoCtx t e r s e' r' s' z zp zq gad =
   (ExtendLinIdx e r s e' r' s', -- extendLin
    e' ~ (e * (r' / r)),         -- convenience; implied by prev constraint
@@ -506,6 +507,7 @@ type GenTunnelInfoCtx t e r s e' r' s' z zp zq gad =
    Lift zp z, CElt t zp,        -- liftLin
    CElt t z, e' `Divides` r')   -- powBasis
 
+-- | Generates auxilliary data needed to tunnel from \(\O_{r'}\) to \(\O_{s'}\).
 tunnelInfo :: forall gad t e r s e' r' s' z zp zq rnd .
   (MonadRandom rnd, GenTunnelInfoCtx t e r s e' r' s' z zp zq gad)
   => Linear t zp e r s

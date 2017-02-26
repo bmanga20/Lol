@@ -1,16 +1,30 @@
+{-|
+Module      : Crypto.RLWE.Challenges.Generate
+Description : Generates challenges in non-legacy proto format.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Generates challenges in non-legacy proto format.
+-}
+
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
--- | Generates challenges in non-legacy proto format.
+module Crypto.RLWE.Challenges.Generate
+(generateMain,genChallengeU
+,writeChallengeU
+,instanceCont, instanceDisc, instanceRLWR) where
 
-module Generate (generateMain, instanceCont, instanceDisc, instanceRLWR) where
-
-import Beacon
-import Common
-import Params as P
+import Crypto.RLWE.Challenges.Beacon
+import Crypto.RLWE.Challenges.Common
+import Crypto.RLWE.Challenges.Params as P
 
 import Crypto.Lol                 hiding (lift)
 import Crypto.Lol.RLWE.Continuous as C

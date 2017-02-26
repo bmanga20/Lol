@@ -1,3 +1,16 @@
+{-|
+Module      : SHEBenches
+Description : Benchmarks for SymmSHE.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Benchmarks for SymmSHE.
+-}
+
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -15,8 +28,7 @@ module SHEBenches (sheBenches, decBenches, rescaleBenches, tunnelBenches) where
 import Crypto.Lol.Benchmarks
 
 import Control.Applicative
-import Control.Monad.Random
-import Control.Monad.State
+import Control.Monad.Random hiding (lift)
 import Crypto.Lol.Utils.ShowType
 import Crypto.Random.DRBG
 

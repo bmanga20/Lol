@@ -1,3 +1,16 @@
+{-|
+Module      : Crypto.RLWE.Challenges.Verify
+Description : Verify generated challenges.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-2
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Verify RLWE/RLWR challenges to ensure that challenges are generated faithfully.
+-}
+
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -9,11 +22,14 @@
 
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
-module Verify where
+module Crypto.RLWE.Challenges.Verify
+(verifyMain, verifyInstanceU
+,readChallenge, regenChallenge
+,beaconAvailable, readBeacon) where
 
-import Beacon
-import Common
-import Generate
+import Crypto.RLWE.Challenges.Beacon
+import Crypto.RLWE.Challenges.Common
+import Crypto.RLWE.Challenges.Generate
 
 import           Crypto.Lol
 import           Crypto.Lol.Cyclotomic.UCyc
@@ -50,7 +66,7 @@ import Crypto.Random.DRBG
 
 import           Control.Applicative
 import           Control.Monad.Except hiding (lift)
-import           Control.Monad.Random
+import           Control.Monad.Random hiding (lift)
 import qualified Data.ByteString.Lazy as BS
 import           Data.Int
 import           Data.List            (nub)
