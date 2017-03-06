@@ -22,12 +22,20 @@ source-repository head
 library
   build-depends:       base >= 4.7 && < 5
                      , constraints
-                     , numeric-prelude
                      , lol >= 0.5
                      , lol-apps >= 0.1
+                     , numeric-prelude
+                     , singletons
+                     , syntactic
                      , type-natural
   default-language:    Haskell2010
   exposed-modules:     Crypto.Alchemy.EDSL
+                       Crypto.Alchemy.CTLang
+                       Crypto.Alchemy.Interpreter.DepthEvaluator
+                       Crypto.Alchemy.Interpreter.Evaluator
+                       Crypto.Alchemy.Interpreter.PT2CT
+                       Crypto.Alchemy.Lam
+                       Crypto.Alchemy.PTLang
 
 -- test-suite alchemy-test
 --   type:                exitcode-stdio-1.0
