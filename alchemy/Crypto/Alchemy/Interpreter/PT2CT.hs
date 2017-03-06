@@ -24,39 +24,6 @@ import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Maybe
 import Data.Type.Natural (Nat(..))
 
-{-
--- | Encodes a sequence of @Z_q@ types, with needed constraints, for
--- depth-@d@ computations. (The exposed type @zq@ is the one used at
--- depth @d@.)
-data Zqs t zp d zq where
-  ZqZ :: (Encode zq zp) => Zqs t zp 'Z zq
-
-  ZqS :: (RescaleCyc (Cyc t) zq' zq,
-          Encode zp zq', CElt t zq') -- ToSDCtx minus Fact m'
-      => Zqs t zp d zq' -> Zqs t zp ('S d) zq
-
-
--- CJP: make sure all the constraints in the GADT, functions, and
--- instances below make logical sense.  Some are weird and I don't
--- yet see whether there are better alternatives.
--}
-
-{-
--- one dict for changing d/zq
-data ZqDict t zp zqs d where
-  ZqZ :: (Encode zp (zqs !! 'Z)) => G t m'map m zp zqs 'Z
-  ZqS :: (...) => G t m'map m zp zqs d -> G t m m'map m zp zqs ('S d)
-
--- needs a mul2 type family
-data ZpDict zp where
-  ZpZ :: ZpDict zp
-  ZpS :: ZpDict zp -> ZpDict (Mul2 zp)
--}
-
-
--- punt for now
---data IdxDict m'map m where
-
 -- injective type families are worthless: see
 -- http://stackoverflow.com/questions/42602796/injective-type-families-with-gadts
 -- https://ghc.haskell.org/trac/ghc/ticket/10833
@@ -86,24 +53,22 @@ data D t zp zqs d where
       => D t (Div2 zp) zqs 'Z -> D t zp zqs 'Z
   DSS :: (zq' ~ (zqs !! ('S d)), zq ~ (zqs !! d), ZpDict zp, ZqDict t zp zq' zq zqs)
       => D t (Div2 zp) zqs ('S d) -> D t zp zqs d -> D t zp zqs ('S d)
-{-
+
 getZpDict :: D t zp zqs d -> (Dict (ZpDict zp), D t (Div2 zp) zqs d)
 getZpDict (DSZ d) = (Dict, d)
 getZpDict (DSS d _) = (Dict, d)
--}
+
 getZqDict :: (zq' ~ (zqs !! ('S d)), zq ~ (zqs !! d))
   => D t zp zqs ('S d) -> (Dict (ZqDict t zp zq' zq zqs), D t zp zqs d)
 getZqDict (DZS d) = (Dict, d)
 getZqDict (DSS _ d) = (Dict, d)
-
-
--- use a type-lvel map from PT index to CT index
 
 -- singletons exports (:!!), which takes a TypeLit index; we need a TypeNatural index
 type family (xs :: [k1]) !! (d :: Nat) :: k1 where
   (x ': xs) !! 'Z = x
   (x ': xs) !! 'S s = xs !! s
 
+-- a type-lvel map from PT index to CT index
 type M2M' m (m'map :: [(Factored,Factored)]) = FromJust (Lookup m m'map)
 
 -- If you get compile errors about kinds, make sure that ALL arguments have
