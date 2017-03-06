@@ -385,7 +385,7 @@ mulScalar a (CT enc k l c) =
 
 -- | Constraint synonym for multiplying a public value with an encrypted value.
 type MulPublicCtx t m m' zp zq =
-  (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq, m `Divides` m', 
+  (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq, m `Divides` m',
    CElt t zp, CElt t (LiftOf zp))
 
 -- | Homomorphically multiply an encrypted value by a public \( R_p \)

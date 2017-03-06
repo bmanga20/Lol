@@ -34,7 +34,8 @@ module Crypto.Lol.FactoredDefs
   Factored, SFactored, Fact, fType, fDec
 , reifyFact, reifyFactI, intToFact
 -- * Prime powers
-, PrimePower, SPrimePower, Sing(SPP), PPow, ppType, ppDec
+-- EAC: We can safely export the PP constructor because of the PrimeBin type.
+, PrimePower(..), SPrimePower, Sing(SPP), PPow, ppType, ppDec
 , reifyPPow, reifyPPowI
 -- * Primes
 , PrimeBin, SPrimeBin, Prime, pType, pDec
