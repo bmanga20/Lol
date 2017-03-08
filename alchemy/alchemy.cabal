@@ -26,7 +26,6 @@ library
                      , lol-apps >= 0.1
                      , numeric-prelude
                      , singletons
-                     , syntactic
                      , type-natural
   default-language:    Haskell2010
   exposed-modules:     Crypto.Alchemy.EDSL

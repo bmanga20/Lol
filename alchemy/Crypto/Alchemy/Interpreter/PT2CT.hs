@@ -130,25 +130,12 @@ instance (SymCT ctexpr) => SymPT (PT2CT ctexpr m'map zqs) where
   (P2CLit    a) +# (P2CTerm d b) = P2CTerm d $ addPublicCT a b
   (P2CLit    a) +# (P2CLit    b) = P2CLit    $ a+b
 
-  {- removed -# from SymPT, replace with neg
-
-  (P2CTerm d a) -# (P2CTerm _ b) =
-    P2CTerm d $ a - b \\ witness entailRingSymCT a
-  (P2CTerm d a) -# (P2CLit b) = P2CTerm d $ addPublicCT (-b) a
-  (P2CLit a) -# (P2CTerm d b) =
-    P2CTerm d $ addPublicCT a (-b) \\ witness entailRingSymCT b
-  (P2CLit a) -# (P2CLit b) = P2CLit $ a-b
-
-  -}
+  neg (P2CTerm d a) = P2CTerm d $ -a \\ witness entailRingSymCT a
+  neg (P2CLit a) = P2CLit $ -a
 
   -- still needs keyswitch
   (P2CTerm (zqDict -> (Dict, d)) a) *# (P2CTerm _ b) =
     P2CTerm d $ rescaleCT (a * b \\ witness entailRingSymCT a)
-
-
-
-
-
 
 {-
 instance LambdaD (PT2CT ctexpr) where

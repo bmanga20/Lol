@@ -3,7 +3,7 @@ Module      : Crypto.Lol.Cyclotomic.Tensor.CPP
 Description : Wrapper for a C++ implementation of the 'Tensor' interface.
 Copyright   : (c) Eric Crockett, 2011-2017
                   Chris Peikert, 2011-2017
-License     : GPL-2
+License     : GPL-3
 Maintainer  : ecrockett0@email.com
 Stability   : experimental
 Portability : POSIX
@@ -70,10 +70,10 @@ import Crypto.Lol.GaussRandom
 import Crypto.Lol.Prelude                             as LP hiding
                                                              (replicate,
                                                              unzip, zip)
+import Crypto.Lol.Tests
 import Crypto.Lol.Types.FiniteField
 import Crypto.Lol.Types.IZipVector
 import Crypto.Lol.Types.Proto
-import Crypto.Lol.Utils.ShowType
 
 import Data.Foldable as F
 

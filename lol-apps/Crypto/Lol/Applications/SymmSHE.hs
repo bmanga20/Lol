@@ -3,7 +3,7 @@ Module      : Crypto.Lol.Applications.SymmSHE
 Description : Symmetric-key homomorphic encryption.
 Copyright   : (c) Eric Crockett, 2011-2017
                   Chris Peikert, 2011-2017
-License     : GPL-2
+License     : GPL-3
 Maintainer  : ecrockett0@email.com
 Stability   : experimental
 Portability : POSIX
@@ -404,7 +404,7 @@ mulGCT (CT enc k l c) = CT enc (k+1) l $ mulG <$> c
 
 ---------- NumericPrelude instances ----------
 
-instance (Lift' zp, Reduce (LiftOf zp) zq, Fact m', CElt t zq, -- mulScalar
+instance (Lift' zp, Reduce (LiftOf zp) zq, CElt t zq, -- mulScalar
           Eq zp, m `Divides` m', ToSDCtx t m' zp zq)
          => Additive.C (CT m zp (Cyc t m' zq)) where
 

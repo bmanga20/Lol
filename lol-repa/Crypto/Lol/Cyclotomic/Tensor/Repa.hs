@@ -3,7 +3,7 @@ Module      : Crypto.Lol.Cyclotomic.Tensor.Repa
 Description : A pure, repa-based implementation of the 'Tensor' interface.
 Copyright   : (c) Eric Crockett, 2011-2017
                   Chris Peikert, 2011-2017
-License     : GPL-2
+License     : GPL-3
 Maintainer  : ecrockett0@email.com
 Stability   : experimental
 Portability : POSIX
@@ -38,10 +38,10 @@ import Crypto.Lol.Cyclotomic.Tensor.Repa.Instances ()
 import Crypto.Lol.Cyclotomic.Tensor.Repa.RTCommon  as RT hiding
                                                                 ((++))
 import Crypto.Lol.Prelude                                as LP
+import Crypto.Lol.Tests
 import Crypto.Lol.Types.FiniteField                      as FF
 import Crypto.Lol.Types.IZipVector
 import Crypto.Lol.Types.Proto
-import Crypto.Lol.Utils.ShowType
 
 import Algebra.Additive     as Additive (C)
 import Algebra.Module       as Module (C)

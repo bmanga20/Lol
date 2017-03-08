@@ -3,7 +3,7 @@ Module      : Crypto.Lol.Types.Unsafe.ZqBasic
 Description : An implementation of modular arithmetic over the integers.
 Copyright   : (c) Eric Crockett, 2011-2017
                   Chris Peikert, 2011-2017
-License     : GPL-2
+License     : GPL-3
 Maintainer  : ecrockett0@email.com
 Stability   : experimental
 Portability : POSIX
@@ -66,8 +66,8 @@ import qualified Algebra.IntegralDomain as IntegralDomain (C)
 import qualified Algebra.Ring           as Ring (C)
 import qualified Algebra.ZeroTestable   as ZeroTestable (C)
 
--- an infinite list of primes greater than the input and congruent to
--- 1 mod m
+-- | An infinite list of primes greater than @lower@ and congruent to
+-- 1 mod @m@.
 goodQs :: (IntegralDomain a, ToInteger a) => a -> a -> [a]
 goodQs m lower = filter (isPrime . toInteger) $
   iterate (+m) $ lower + ((m-lower) `mod` m) + 1

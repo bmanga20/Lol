@@ -5,11 +5,11 @@ name:                lol-repa
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.0.0.2
+version:             0.0.0.3
 synopsis:            A repa backend for <https://hackage.haskell.org/package/lol lol>.
 homepage:            https://github.com/cpeikert/Lol
 Bug-Reports:         https://github.com/cpeikert/Lol/issues
-license:             GPL-2
+license:             GPL-3
 license-file:        LICENSE
 author:              Eric Crockett <ecrockett0@gmail.com>, Chris Peikert <cpeikert@alum.mit.edu>
 maintainer:          Eric Crockett <ecrockett0@gmail.com>
@@ -40,6 +40,16 @@ Flag opt
   Description: Turn on library optimizations
   Default:     True
 
+Flag with-apps
+  Description: When this flag is enabled, lol-apps tests and benchmarks are buildable.
+  Default:     True
+
+-- EAC: This flag is due to https://github.com/commercialhaskell/stack/issues/1406,
+-- which prevents us from telling stack to not build executables.
+Flag with-execs
+  Description: When this flag and `with-apps` are both enabled, the lol-apps executables are buildable.
+  Default:     False
+
 library
   default-language:   Haskell2010
   ghc-options: -fwarn-dodgy-imports
@@ -67,7 +77,7 @@ library
     constraints < 0.10,
     data-default >= 0.3.0 && < 0.8,
     deepseq >= 1.4.1.1 && < 1.5,
-    lol >= 0.6.0.0 && < 0.7,
+    lol >= 0.6.0.0 && < 0.8,
     MonadRandom >= 0.2 && < 0.6,
     mtl >= 2.2.1 && < 2.3,
     numeric-prelude >= 0.4.2 && < 0.5,
@@ -82,8 +92,8 @@ library
 Benchmark bench-lol-repa
   type:             exitcode-stdio-1.0
   default-language: Haskell2010
-  main-is:          BenchRepaMain.hs
-  ghc-options:      -main-is BenchRepaMain
+  main-is:          BenchLolRepaMain.hs
+  ghc-options:      -main-is BenchLolRepaMain
   hs-source-dirs:   benchmarks
 
   ghc-options: -O2 -funfolding-creation-threshold=15000 -funfolding-use-threshold=1000
@@ -92,19 +102,101 @@ Benchmark bench-lol-repa
   build-depends:
     base >= 4.9 && < 5,
     DRBG < 0.6,
-    lol >= 0.6.0.0 && < 0.7,
-    lol-benches >= 0.0.0.3 && < 0.1,
+    lol >= 0.7.0.0 && < 0.8,
     lol-repa
+
+Benchmark bench-lol-apps-repa
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
+  main-is:          BenchAppsRepaMain.hs
+  ghc-options:      -main-is BenchAppsRepaMain
+  hs-source-dirs:   benchmarks
+
+  if !flag(with-apps)
+    buildable: False
+  ghc-options: -O2 -funfolding-creation-threshold=15000 -funfolding-use-threshold=1000
+  ghc-options: -fsimpl-tick-factor=115
+
+  build-depends:
+    base >= 4.9 && < 5,
+    DRBG < 0.6,
+    lol >= 0.7.0.0 && < 0.8,
+    lol-apps >= 0.2.1 && < 0.3,
+    lol-repa,
+    MonadRandom >= 0.2 && < 0.6
 
 test-suite test-lol-repa
   type:             exitcode-stdio-1.0
   default-language: Haskell2010
-  main-is:          TestRepaMain.hs
-  ghc-options:      -main-is TestRepaMain
+  main-is:          TestLolRepaMain.hs
+  ghc-options:      -main-is TestLolRepaMain
   hs-source-dirs:   tests
   ghc-options:      -threaded -O2
 
   build-depends:
     base >= 4.9 && < 5,
+    lol >= 0.7.0.0 && < 0.8,
     lol-repa,
-    lol-tests < 0.1
+    test-framework < 0.9
+
+test-suite test-lol-apps-repa
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
+  main-is:          TestAppsRepaMain.hs
+  if !flag(with-apps)
+    buildable: False
+  ghc-options:      -main-is TestAppsRepaMain
+  hs-source-dirs:   tests
+  ghc-options:      -threaded -O2
+
+  build-depends:
+    base >= 4.9 && < 5,
+    lol >= 0.7.0.0 && < 0.8,
+    lol-apps >= 0.2.1 && < 0.3,
+    lol-repa,
+    test-framework < 0.9
+
+executable homomprf-repa
+  hs-source-dirs: examples
+  default-language: Haskell2010
+  main-is: HomomPRFRepaMain.hs
+  if !flag(with-apps) || !flag(with-execs)
+    buildable: False
+  ghc-options: -main-is HomomPRFRepaMain
+
+  ghc-options: -threaded -rtsopts -O2
+
+  build-depends:
+    base >= 4.9 && < 4.10,
+    lol-apps >= 0.2.1 && < 0.3,
+    lol-repa
+
+executable khprf-repa
+  hs-source-dirs: examples
+  default-language: Haskell2010
+  main-is: KHPRFRepaMain.hs
+  if !flag(with-apps) || !flag(with-execs)
+    buildable: False
+  ghc-options: -main-is KHPRFRepaMain
+
+  ghc-options: -threaded -rtsopts -O2
+
+  build-depends:
+    base >= 4.9 && < 4.10,
+    lol-apps >= 0.2.1 && < 0.3,
+    lol-repa
+
+executable symmshe-repa
+  hs-source-dirs:   examples
+  default-language: Haskell2010
+  main-is:          SHERepaMain.hs
+  if !flag(with-apps) || !flag(with-execs)
+    buildable: False
+  ghc-options: -main-is SHERepaMain
+
+  ghc-options: -threaded -rtsopts -O2
+
+  build-depends:
+    base >= 4.9 && < 4.10,
+    lol-apps >= 0.2.1 && < 0.3,
+    lol-repa

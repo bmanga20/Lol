@@ -33,6 +33,8 @@ class SymPT expr where
           -- CJP: generalize input depths?
           expr d rp -> expr d rp -> expr d rp
 
+  neg :: (rp ~ Cyc t m zp, Fact m, CElt t zp) => expr d rp -> expr d rp
+
   -- | Plaintext multiplication.  Inputs must be one depth less than
   -- output (so we can't use 'Ring').
 
@@ -41,3 +43,7 @@ class SymPT expr where
           expr ('S d) rp -> expr ('S d) rp -> expr d rp
 -- EAC: d is now 'level' and we expect the zqs list to be (zq0, (zq0,zq1), ...) in increasing size
 -- so that we can give more zqs than we end up using
+
+(-#) :: (SymPT expr, rp ~ Cyc t m zp, Fact m, CElt t zp)
+     => expr d rp -> expr d rp -> expr d rp
+a -# b = a +# (neg b)

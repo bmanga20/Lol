@@ -20,5 +20,5 @@ instance LambdaD ID where
 -- | Metacircular plaintext symantics.
 instance SymPT ID where
   a +# b = ID $ unID a + unID b
-  a -# b = ID $ unID a - unID b
+  neg a = ID $ negate $ unID a
   a *# b = ID $ unID a * unID b
