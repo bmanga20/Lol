@@ -29,9 +29,9 @@ class SymPT expr where
   litPT :: rp -> expr d rp
 
 
-  (+#), (-#) :: (rp ~ Cyc t m zp, Fact m, CElt t zp) =>
-                -- CJP: generalize input depths?
-                expr d rp -> expr d rp -> expr d rp
+  (+#) :: (rp ~ Cyc t m zp, Fact m, CElt t zp) =>
+          -- CJP: generalize input depths?
+          expr d rp -> expr d rp -> expr d rp
 
   -- | Plaintext multiplication.  Inputs must be one depth less than
   -- output (so we can't use 'Ring').
