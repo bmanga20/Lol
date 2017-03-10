@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Crypto.Alchemy.Interpreter.Evaluator where
+module Crypto.Alchemy.Interpreter.CTEval where
 
 import Algebra.Additive as Additive (C)
 import Algebra.Ring as Ring (C)
@@ -8,7 +8,7 @@ import Algebra.Ring as Ring (C)
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.CT
 import Crypto.Lol
-import Crypto.Lol.Applications.SymmSHE
+import Crypto.Lol.Applications.SymmSHE as SHE
 
 import Data.Constraint
 
@@ -27,3 +27,4 @@ instance SymCT I where
   rescaleCT = I . rescaleLinearCT . unI
   addPublicCT a = I . addPublic a . unI
   mulPublicCT a = I . mulPublic a . unI
+  tunnelCT info = I . SHE.tunnelCT info . unI

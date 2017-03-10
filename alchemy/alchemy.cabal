@@ -29,9 +29,10 @@ library
                      , type-natural
   default-language:    Haskell2010
   exposed-modules:     Crypto.Alchemy.EDSL
-                       Crypto.Alchemy.Interpreter.DepthEvaluator
-                       Crypto.Alchemy.Interpreter.Evaluator
+                       Crypto.Alchemy.Interpreter.PTEval
+                       Crypto.Alchemy.Interpreter.CTEval
                        Crypto.Alchemy.Interpreter.PT2IR
+                       Crypto.Alchemy.Interpreter.IR2CT
                        Crypto.Alchemy.Language.CT
                        Crypto.Alchemy.Language.IR
                        Crypto.Alchemy.Language.Lam

@@ -26,3 +26,8 @@ class SymCT expr where
 
   mulPublicCT :: (MulPublicCtx t m m' zp zq)
               => Cyc t m zp -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+
+  tunnelCT :: (TunnelCtx t r s e' r' s' zp zq gad, e ~ FGCD r s)
+           => TunnelInfo gad t e r s e' r' s' zp zq
+              -> expr (CT r zp (Cyc t r' zq))
+              -> expr (CT s zp (Cyc t s' zq))

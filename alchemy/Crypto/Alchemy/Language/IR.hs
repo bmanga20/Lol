@@ -26,3 +26,9 @@ class SymIR expr where
 
   mulPublicIR :: (MulPublicCtx t m m' zp zq)
               => Cyc t m zp -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+
+  -- has constraints from SymmSHE.tunnelCT for all in-scope variables
+  tunnelIR :: (Fact r, Fact s, CElt t zp, ToSDCtx t r' zp zq, Lift' zp,
+               IntegralDomain zp, Reduce (LiftOf zp) zq, Ring zq,
+               Fact r', CElt t (LiftOf zp), CElt t zq)
+           => expr (CT r zp (Cyc t r' zq)) -> expr (CT s zp (Cyc t s' zq))

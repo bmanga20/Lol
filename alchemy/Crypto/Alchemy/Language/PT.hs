@@ -1,11 +1,14 @@
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module Crypto.Alchemy.Language.PT where
 
 import Crypto.Lol hiding (Pos(..))
 import Data.Type.Natural
+import Crypto.Lol.Types.ZPP
+import Crypto.Lol.Cyclotomic.Tensor
 
 -- | Symantics for leveled plaintext operations of some depth @d@.
 
@@ -42,8 +45,10 @@ class SymPT expr where
   (*#) :: (rp ~ Cyc t m zp, Fact m, CElt t zp) =>
           -- CJP: generalize input depths?
           expr ('S d) rp -> expr ('S d) rp -> expr d rp
--- EAC: d is now 'level' and we expect the zqs list to be (zq0, (zq0,zq1), ...) in increasing size
--- so that we can give more zqs than we end up using
+
+  tunnelPT :: (e ~ FGCD r s, e `Divides` r, e `Divides` s, CElt t zp, ZPP zp,
+               TElt t (ZpOf zp))
+           => expr d (Cyc t r zp) -> expr d (Cyc t s zp)
 
 (-#) :: (SymPT expr, rp ~ Cyc t m zp, Fact m, CElt t zp)
      => expr d rp -> expr d rp -> expr d rp

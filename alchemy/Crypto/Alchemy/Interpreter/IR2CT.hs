@@ -1,2 +1,2 @@
 
-module IR2CT where
+module Crypto.Alchemy.Interpreter.IR2CT where
