@@ -29,13 +29,13 @@ library
                      , type-natural
   default-language:    Haskell2010
   exposed-modules:     Crypto.Alchemy.EDSL
-                       Crypto.Alchemy.Language.CT
                        Crypto.Alchemy.Interpreter.DepthEvaluator
                        Crypto.Alchemy.Interpreter.Evaluator
                        Crypto.Alchemy.Interpreter.PT2IR
+                       Crypto.Alchemy.Language.CT
+                       Crypto.Alchemy.Language.IR
                        Crypto.Alchemy.Language.Lam
                        Crypto.Alchemy.Language.PT
-                       Crypto.Alchemy.Language.IR
 
 -- test-suite alchemy-test
 --   type:                exitcode-stdio-1.0
