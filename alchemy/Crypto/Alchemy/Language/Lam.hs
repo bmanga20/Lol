@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, TypeInType  #-}
 
-module Crypto.Alchemy.Lam where
+module Crypto.Alchemy.Language.Lam where
 
 import Data.Kind
 

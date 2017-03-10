@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies     #-}
 
-module Crypto.Alchemy.PTLang where
+module Crypto.Alchemy.Language.PT where
 
 import Crypto.Lol hiding (Pos(..))
 import Data.Type.Natural

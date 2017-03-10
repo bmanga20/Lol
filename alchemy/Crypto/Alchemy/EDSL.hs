@@ -15,9 +15,10 @@
 
 module Crypto.Alchemy.EDSL where
 
-import Crypto.Alchemy.Lam ()
-import Crypto.Alchemy.PTLang ()
-import Crypto.Alchemy.CTLang ()
+import Crypto.Alchemy.Langauge.CT ()
+import Crypto.Alchemy.Language.IR ()
+import Crypto.Alchemy.Langauge.Lam ()
+import Crypto.Alchemy.Langauge.PT ()
 import Crypto.Alchemy.Interpreter.Evaluator ()
 import Crypto.Alchemy.Interpreter.DepthEvaluator ()
 import Crypto.Alchemy.Interpreter.PT2IR ()

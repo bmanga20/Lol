@@ -7,8 +7,8 @@
 
 module Crypto.Alchemy.Interpreter.DepthEvaluator where
 
-import Crypto.Alchemy.Lam
-import Crypto.Alchemy.PTLang
+import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.PT
 import Crypto.Lol hiding (type (*))
 import Data.Kind
 

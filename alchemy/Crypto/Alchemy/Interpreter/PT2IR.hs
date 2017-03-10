@@ -11,9 +11,9 @@
 
 module Crypto.Alchemy.Interpreter.PT2IR where
 
-import Crypto.Alchemy.Lam
-import Crypto.Alchemy.IRLang
-import Crypto.Alchemy.PTLang
+import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.IR
+import Crypto.Alchemy.Language.PT
 import Crypto.Lol hiding (Pos(..), type (*))
 import qualified Crypto.Lol as Lol (Pos(..))
 import Crypto.Lol.Applications.SymmSHE

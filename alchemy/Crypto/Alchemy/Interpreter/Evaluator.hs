@@ -5,8 +5,8 @@ module Crypto.Alchemy.Interpreter.Evaluator where
 import Algebra.Additive as Additive (C)
 import Algebra.Ring as Ring (C)
 
-import Crypto.Alchemy.Lam
-import Crypto.Alchemy.CTLang
+import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.CT
 import Crypto.Lol
 import Crypto.Lol.Applications.SymmSHE
 

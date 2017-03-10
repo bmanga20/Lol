@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies     #-}
 {-# LANGUAGE TypeOperators    #-}
 
-module Crypto.Alchemy.CTLang where
+module Crypto.Alchemy.Language.CT where
 
 import Crypto.Lol
 import Crypto.Lol.Applications.SymmSHE
