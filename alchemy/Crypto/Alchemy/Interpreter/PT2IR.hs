@@ -9,10 +9,10 @@
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ViewPatterns        #-}
 
-module Crypto.Alchemy.Interpreter.PT2CT where
+module Crypto.Alchemy.Interpreter.PT2IR where
 
 import Crypto.Alchemy.Lam
-import Crypto.Alchemy.CTLang
+import Crypto.Alchemy.IRLang
 import Crypto.Alchemy.PTLang
 import Crypto.Lol hiding (Pos(..), type (*))
 import qualified Crypto.Lol as Lol (Pos(..))
@@ -92,14 +92,14 @@ type M2M' m m'map = FromJust (Lookup m m'map)
 -- The `forall` is right before the polymorphic argument in order to keep the
 -- type polymorphic after partial application. (Otherwise the LamD instance won't compile)
 -- This is likely a bug.
-data PT2CT :: (* -> *)
+data PT2IR :: (* -> *)
            -> [(Factored,Factored)]
            -> [*]
            -> forall k . k
            -> *
            -> *
   where
-    P2CTerm  :: (m' ~ M2M' m m'map,
+    P2ITerm  :: (m' ~ M2M' m m'map,
                  ct ~ CT m zp (Cyc t m' zq),
                  zp ~ Z2E e,
                  zq ~ (zqs !! d),
@@ -107,10 +107,10 @@ data PT2CT :: (* -> *)
                  CElt t zq, Eq zp, Encode zp zq,
                  --additional constraints for AddPublicCtx t m m' zp zq
                  CElt t zp, CElt t (LiftOf zp))
-             => D t e zqs d -> ctexpr ct -> PT2CT ctexpr m'map zqs d (Cyc t m zp)
+             => D t e zqs d -> ctexpr ct -> PT2IR ctexpr m'map zqs d (Cyc t m zp)
 
-    P2CLam :: (PT2CT ctexpr m'map zqs da a -> PT2CT ctexpr m'map zqs db b)
-           -> PT2CT ctexpr m'map zqs '(da,db) (a -> b)
+    P2ILam :: (PT2IR ctexpr m'map zqs da a -> PT2IR ctexpr m'map zqs db b)
+           -> PT2IR ctexpr m'map zqs '(da,db) (a -> b)
 
 -- CJP: want a conversion that works for both Term and Lam.  How to
 -- write the type signature for it?
@@ -121,22 +121,22 @@ pt2CT :: (m `Divides` m', ct ~ CT m zp (Cyc t m' zq), Ring ct)
       -> proxy m'
       -> Zqs t zp d zq
       -> ctexpr (CT m zp (Cyc t m' zq))
-pt2CT (P2CTerm f) = f
+pt2CT (P2ITerm f) = f
 -}
 
-instance (SymCT ctexpr) => SymPT (PT2CT ctexpr m'map zqs) where
+instance (SymIR ctexpr) => SymPT (PT2IR ctexpr m'map zqs) where
 
-  (P2CTerm d a) +# (P2CTerm _ b) = P2CTerm d $ a + b
-                                   \\ witness entailRingSymCT a
+  (P2ITerm d a) +# (P2ITerm _ b) = P2ITerm d $ a + b
+                                   \\ witness entailRingSymIR a
 
-  neg (P2CTerm d a) = P2CTerm d $ -a \\ witness entailRingSymCT a
+  neg (P2ITerm d a) = P2ITerm d $ -a \\ witness entailRingSymIR a
 
-  (P2CTerm (zqDict -> (Dict, d)) a) *# (P2CTerm _ b) =
-    P2CTerm d $ rescaleCT (a * b \\ witness entailRingSymCT a)
+  (P2ITerm (zqDict -> (Dict, d)) a) *# (P2ITerm _ b) =
+    P2ITerm d $ rescaleIR (a * b \\ witness entailRingSymIR a)
 
-  addPublicPT a (P2CTerm d b) = P2CTerm d $ addPublicCT a b
-  mulPublicPT a (P2CTerm d b) = P2CTerm d $ mulPublicCT a b
+  addPublicPT a (P2ITerm d b) = P2ITerm d $ addPublicIR a b
+  mulPublicPT a (P2ITerm d b) = P2ITerm d $ mulPublicIR a b
 
-instance LambdaD (PT2CT ctexpr m'map zqs) where
-  lamD = P2CLam
-  appD (P2CLam f) = f
+instance LambdaD (PT2IR ctexpr m'map zqs) where
+  lamD = P2ILam
+  appD (P2ILam f) = f

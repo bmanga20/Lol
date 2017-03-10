@@ -20,7 +20,7 @@ import Crypto.Alchemy.PTLang ()
 import Crypto.Alchemy.CTLang ()
 import Crypto.Alchemy.Interpreter.Evaluator ()
 import Crypto.Alchemy.Interpreter.DepthEvaluator ()
-import Crypto.Alchemy.Interpreter.PT2CT ()
+import Crypto.Alchemy.Interpreter.PT2IR ()
 
 {- CJP: vestigial from we had entailAdditiveSymPT
 instance (SymCT ctexpr, Eq zp)
