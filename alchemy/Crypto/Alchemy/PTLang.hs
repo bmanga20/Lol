@@ -26,7 +26,8 @@ class SymPT expr where
                       => Tagged (expr d rp)
                          ((Additive rp) :- Additive (expr d rp))
   -}
-  litPT :: rp -> expr d rp
+  addPublicPT :: (rp ~ Cyc t m zp, Additive rp) => rp -> expr d rp -> expr d rp
+  mulPublicPT :: (rp ~ Cyc t m zp, Ring rp) => rp -> expr d rp -> expr d rp
 
 
   (+#) :: (rp ~ Cyc t m zp, Fact m, CElt t zp) =>

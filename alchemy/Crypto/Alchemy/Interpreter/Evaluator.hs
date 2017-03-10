@@ -26,3 +26,4 @@ instance SymCT I where
   entailRingSymCT = tag $ Sub Dict
   rescaleCT = I . rescaleLinearCT . unI
   addPublicCT a = I . addPublic a . unI
+  mulPublicCT a = I . mulPublic a . unI

@@ -23,3 +23,6 @@ class SymCT expr where
 
   addPublicCT :: (AddPublicCtx t m m' zp zq)
               => Cyc t m zp -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+
+  mulPublicCT :: (MulPublicCtx t m m' zp zq)
+              => Cyc t m zp -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))

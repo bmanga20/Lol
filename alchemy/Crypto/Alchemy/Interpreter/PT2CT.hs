@@ -1,11 +1,11 @@
 {-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
-{-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ViewPatterns        #-}
 
@@ -14,12 +14,13 @@ module Crypto.Alchemy.Interpreter.PT2CT where
 import Crypto.Alchemy.Lam
 import Crypto.Alchemy.CTLang
 import Crypto.Alchemy.PTLang
-import Crypto.Lol hiding (Pos(..))
+import Crypto.Lol hiding (Pos(..), type (*))
 import qualified Crypto.Lol as Lol (Pos(..))
 import Crypto.Lol.Applications.SymmSHE
 import Crypto.Lol.Types
 
 import Data.Constraint
+import Data.Kind
 import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Maybe
 import Data.Type.Natural (Nat(..))
@@ -82,18 +83,21 @@ type family (xs :: [k1]) !! (d :: Nat) :: k1 where
   (x ': xs) !! 'S s = xs !! s
 
 -- a type-lvel map from PT index to CT index
-type M2M' m (m'map :: [(Factored,Factored)]) = FromJust (Lookup m m'map)
+type M2M' m m'map = FromJust (Lookup m m'map)
 
 -- If you get compile errors about kinds, make sure that ALL arguments have
 -- kind sigs! https://ghc.haskell.org/trac/ghc/ticket/13365
 -- | Plaintext to ciphertext compiler.
-data PT2CT
-  (ctexpr :: * -> *)    -- ^ symantics of target ciphertext expression
-  (m'map :: [(Factored,Factored)])
-  (zqs :: [*])
-  (d :: k)                      -- ^ depth of computation
-  (a :: *)                      -- ^ type of the plaintext expression
-  :: *
+
+-- The `forall` is right before the polymorphic argument in order to keep the
+-- type polymorphic after partial application. (Otherwise the LamD instance won't compile)
+-- This is likely a bug.
+data PT2CT :: (* -> *)
+           -> [(Factored,Factored)]
+           -> [*]
+           -> forall k . k
+           -> *
+           -> *
   where
     P2CTerm  :: (m' ~ M2M' m m'map,
                  ct ~ CT m zp (Cyc t m' zq),
@@ -104,8 +108,6 @@ data PT2CT
                  --additional constraints for AddPublicCtx t m m' zp zq
                  CElt t zp, CElt t (LiftOf zp))
              => D t e zqs d -> ctexpr ct -> PT2CT ctexpr m'map zqs d (Cyc t m zp)
-
-    P2CLit :: (rp ~ Cyc t m zp) => rp -> PT2CT ctexpr m'map zqs d rp
 
     P2CLam :: (PT2CT ctexpr m'map zqs da a -> PT2CT ctexpr m'map zqs db b)
            -> PT2CT ctexpr m'map zqs '(da,db) (a -> b)
@@ -126,19 +128,15 @@ instance (SymCT ctexpr) => SymPT (PT2CT ctexpr m'map zqs) where
 
   (P2CTerm d a) +# (P2CTerm _ b) = P2CTerm d $ a + b
                                    \\ witness entailRingSymCT a
-  (P2CTerm d a) +# (P2CLit    b) = P2CTerm d $ addPublicCT b a
-  (P2CLit    a) +# (P2CTerm d b) = P2CTerm d $ addPublicCT a b
-  (P2CLit    a) +# (P2CLit    b) = P2CLit    $ a+b
 
   neg (P2CTerm d a) = P2CTerm d $ -a \\ witness entailRingSymCT a
-  neg (P2CLit a) = P2CLit $ -a
 
-  -- still needs keyswitch
   (P2CTerm (zqDict -> (Dict, d)) a) *# (P2CTerm _ b) =
     P2CTerm d $ rescaleCT (a * b \\ witness entailRingSymCT a)
 
-{-
-instance LambdaD (PT2CT ctexpr) where
+  addPublicPT a (P2CTerm d b) = P2CTerm d $ addPublicCT a b
+  mulPublicPT a (P2CTerm d b) = P2CTerm d $ mulPublicCT a b
+
+instance LambdaD (PT2CT ctexpr m'map zqs) where
   lamD = P2CLam
   appD (P2CLam f) = f
--}
