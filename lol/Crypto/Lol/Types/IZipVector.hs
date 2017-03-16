@@ -130,14 +130,14 @@ instance (Fact m, Reflects q Int64) => Protoable (IZipVector m (ZqBasic q Int64)
 
   toProto (IZipVector xs') =
     let m = fromIntegral $ valueFact @m
-        q = fromIntegral (proxy value (Proxy::Proxy q) :: Int64)
+        q = fromIntegral (value @q :: Int64)
         xs = S.fromList $ V.toList $ V.map LP.lift xs'
     in RqProduct $ S.singleton Rq1{..}
 
   fromProto (RqProduct xs') = do
     let rqlist = F.toList xs'
         m' = valueFact @m :: Int
-        q' = proxy value (Proxy::Proxy q) :: Int64
+        q' = value @q :: Int64
         n = totientFact @m
     unless (F.length rqlist == 1) $ throwError $
       "An error occurred while reading the proto type for CT.\n\
@@ -161,14 +161,14 @@ instance (Fact m, Reflects q Double) => Protoable (IZipVector m (RRq q Double)) 
 
   toProto (IZipVector xs') =
     let m = fromIntegral $ valueFact @m
-        q = round (proxy value (Proxy::Proxy q) :: Double)
+        q = round (value @q :: Double)
         xs = S.fromList $ V.toList $ V.map LP.lift xs'
     in KqProduct $ S.singleton Kq1{..}
 
   fromProto (KqProduct xs') = do
     let rqlist = F.toList xs'
         m' = valueFact @m :: Int
-        q' = round (proxy value (Proxy::Proxy q) :: Double)
+        q' = round (value @q :: Double)
         n = totientFact @m
     unless (F.length rqlist == 1) $ throwError $
       "An error occurred while reading the proto type for CT.\n\

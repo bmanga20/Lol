@@ -597,14 +597,14 @@ instance (Mod zp, Typeable gad,
     P.TunnelInfo
       (toProto linf)
       (toProto $ KSLHint <$> hints)
-      (fromIntegral (proxy value (Proxy::Proxy e) :: Int))
-      (fromIntegral (proxy value (Proxy::Proxy r) :: Int))
-      (fromIntegral (proxy value (Proxy::Proxy s) :: Int))
+      (fromIntegral (value @e :: Int))
+      (fromIntegral (value @r :: Int))
+      (fromIntegral (value @s :: Int))
       (fromIntegral $ proxy modulus (Proxy::Proxy zp))
   fromProto (P.TunnelInfo linf hints e r s p) =
-    let e' = fromIntegral $ (proxy value (Proxy::Proxy e) :: Int)
-        r' = fromIntegral $ (proxy value (Proxy::Proxy r) :: Int)
-        s' = fromIntegral $ (proxy value (Proxy::Proxy s) :: Int)
+    let e' = fromIntegral $ (value @e :: Int)
+        r' = fromIntegral $ (value @r :: Int)
+        s' = fromIntegral $ (value @s :: Int)
         p' = fromIntegral $ proxy modulus (Proxy::Proxy zp)
     in if p' == p && e' == e && r' == r && s' == s
        then do

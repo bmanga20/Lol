@@ -11,10 +11,13 @@ Portability : POSIX
 Orphan instance of 'IrreduciblePoly' for characteristic-2 fields.
 -}
 
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE InstanceSigs         #-}
 {-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE RebindableSyntax     #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -28,8 +31,9 @@ import Data.Map hiding (map)
 import Data.Maybe (fromMaybe)
 
 instance (CharOf a ~ Prime2, Field a) => IrreduciblePoly a where
+  irreduciblePoly :: forall d . (Reflects d Int) => Tagged d (Polynomial a)
   irreduciblePoly = do
-    n <- value
+    let n = value @d
     return $ flip fromMaybe (lookup n polyMap) $ error $
       "The IrreduciblePoly instance for N2 included with the library " ++
       "(and exported by Crypto.Lol) only contains irreducible polynomials " ++

@@ -20,6 +20,7 @@ A collection of helper functions for working with \(\Z_m^*\).
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -42,7 +43,7 @@ import Data.Set  as S (Set, difference, findMin, fromList, map, null)
 -- Requires \(\gcd(p,m)=1\).
 order :: forall m . (Reflects m Int) => Int -> Tagged m Int
 order p = tag $
-  let mval = proxy value (Proxy::Proxy m)
+  let mval = value @m
   in if gcd p mval /= 1
      then error "p and m not coprime"
      else 1 + length (takeWhile (/= one) $

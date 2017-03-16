@@ -25,6 +25,7 @@ The safe way to use this type is to import "Crypto.Lol.Types".
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RebindableSyntax           #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
@@ -49,13 +50,13 @@ newtype RRq q r = RRq' r
 
 {-# INLINABLE reduce' #-}
 reduce' :: forall q r . (Reflects q r, RealField r) => r -> RRq q r
-reduce' = let q = proxy value (Proxy::Proxy q)
+reduce' = let q = value @q
           in \x -> RRq' $ x - q * floor (x / q)
 
 -- puts value in range [-q/2, q/2)
 decode' :: forall q r . (Reflects q r, Ord r, Ring r)
            => RRq q r -> r
-decode' = let qval = proxy value (Proxy::Proxy q)
+decode' = let qval = value @q
           in \(RRq' x) -> if x + x < qval then x else x - qval
 
 instance (Reflects q r, RealField r, Additive (RRq q r))
@@ -75,7 +76,7 @@ instance (Reflects q r, RealField r, Ord r) => Additive.C (RRq q r) where
   zero = RRq' zero
 
   {-# INLINABLE (+) #-}
-  (+) = let qval = proxy value (Proxy::Proxy q)
+  (+) = let qval = value @q
         in \ (RRq' x) (RRq' y) ->
         let z = x + y
         in RRq' (if z >= qval then z - qval else z)

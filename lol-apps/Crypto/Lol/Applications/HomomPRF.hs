@@ -260,7 +260,7 @@ instance (UnPP p ~ '(Prime2, 'S e),                                             
   ptRound (RHCons ksqHint rest) x =
     let x' = addPublic one x
         xprod = rescaleLinearCT $ keySwitchQuadCirc ksqHint $ x*x'
-        p = proxy value (Proxy::Proxy p)
+        p = value @p
         xs = map (\y->modSwitchPT $ addPublic (fromInteger $ y*(-y+1)) xprod) [1..] :: [CT m zp' (Cyc t m' zq')]
     in ptRoundInternal rest $ take (p `div` 4) xs
 

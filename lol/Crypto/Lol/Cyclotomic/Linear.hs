@@ -25,6 +25,7 @@ over a common subring.
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -122,10 +123,10 @@ instance (Reflects e Word32, Reflects r Word32,
           Protoable (Cyc t s zq), ProtoType (t s zq) ~ RqProduct)
   => Protoable (Linear t zq e r s) where
   type ProtoType (Linear t zq e r s) = LinearRq
-  toProto (RD cs) = LinearRq (proxy value (Proxy::Proxy e)) (proxy value (Proxy::Proxy r)) $ toProto cs
+  toProto (RD cs) = LinearRq (value @e) (value @r) $ toProto cs
   fromProto (LinearRq e r cs) =
-    let e' = proxy value (Proxy::Proxy e)
-        r' = proxy value (Proxy::Proxy r)
+    let e' = value @e
+        r' = value @r
     in if e == e' && r == r'
        then RD <$> fromProto cs
        else error $ "Could not deserialize Linear: types imply e=" ++

@@ -77,10 +77,10 @@ type GFCtx fp d = (PrimeField fp, Reflects d Int)
 instance (GFCtx fp d) => Enumerable (GF fp d) where
   values = GF . fromCoeffs <$>
            -- d-fold cartesian product of Fp values
-           replicateM (proxy value (Proxy::Proxy d)) values
+           replicateM (value @d) values
 
 instance (Random fp, Reflects d Int) => Random (GF fp d) where
-  random = let d = proxy value (Proxy::Proxy d)
+  random = let d = value @d
            in runRand $ (GF . fromCoeffs) <$> replicateM d (liftRand random)
   {-# INLINABLE random #-}
 
@@ -109,7 +109,7 @@ instance (GFCtx fp d) => CRTrans Maybe (GF fp d) where
       omegaPow :: Maybe (Int -> GF fp d)
       omegaPow =
         let size' = proxy size (Proxy :: Proxy (GF fp d))
-            mval = proxy value (Proxy :: Proxy m)
+            mval = value @m
             (q,r) = (size'-1) `quotRem` mval
             gen = head $ filter isPrimitive values
             omega = gen^q
@@ -119,7 +119,7 @@ instance (GFCtx fp d) => CRTrans Maybe (GF fp d) where
            else Nothing
       scalarInv :: Maybe (GF fp d)
       scalarInv = Just $ recip $ fromIntegral $ valueHat
-                    (proxy value (Proxy::Proxy m) :: Int)
+                    (value @m :: Int)
 
 -- | This wrapper for a list of coefficients is used to define a
 -- \(\F_{p^d}\)-module structure for tensors over \(\F_p\) of dimension
@@ -130,7 +130,7 @@ instance (Additive fp, Ring (GF fp d), Reflects d Int)
   => Module.C (GF fp d) (TensorCoeffs fp) where
 
   r *> (Coeffs fps) =
-    let dval = proxy value (Proxy::Proxy d)
+    let dval = value @d
         n = length fps
     in if n `mod` dval /= 0 then
                 error $ "FiniteField: d (= " ++ show dval ++
@@ -146,21 +146,20 @@ chunksOf n xs
 -- | Yield a list of length exactly \(d\) (i.e., including trailing zeros)
 -- of the \(\F_p\)-coefficients with respect to the power basis.
 toList :: forall fp d . (Reflects d Int, Additive fp) => GF fp d -> [fp]
-toList = let dval = proxy value (Proxy::Proxy d)
+toList = let dval = value @d
          in \(GF p) -> let l = coeffs p
                        in l ++ replicate (dval - length l) zero
 
 -- | Yield a field element given up to \(d\) coefficients with respect
 -- to the power basis.
 fromList :: forall fp d . (Reflects d Int) => [fp] -> GF fp d
-fromList = let dval = proxy value (Proxy::Proxy d)
+fromList = let dval = value @d
            in \cs -> if length cs <= dval then GF $ fromCoeffs cs
                      else error $ "FiniteField.fromList: length " ++
                               show (length cs) ++ " > degree " ++ show dval
 
 sizePP :: forall fp d . (GFCtx fp d) => Tagged (GF fp d) PP
-sizePP = tag (valuePrime @(CharOf fp),
-              proxy value (Proxy::Proxy d))
+sizePP = tag (valuePrime @(CharOf fp), value @d)
 
 -- | The order of the field: @size (GF fp d) = @\( p^d \)
 size :: (GFCtx fp d) => Tagged (GF fp d) Int
@@ -187,7 +186,7 @@ powTraces =
   --DT.trace ("FiniteField.powTraces: p = " ++
   --          show (proxy value (Proxy::Proxy (CharOf fp)) :: Int) ++
   --          ", d = " ++ show (proxy value (Proxy::Proxy d) :: Int)) $
-  let d = proxy value (Proxy :: Proxy d)
+  let d = value @d
   in tag $ map trace' $ take d $
      iterate (* GF (X ^^ 1)) (one :: GF fp d)
 

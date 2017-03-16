@@ -104,7 +104,7 @@ instance Show (ArgType TrivGad) where
   show _ = "TrivGad"
 
 instance (Reflects b Integer) => Show (ArgType (BaseBGad (b :: k))) where
-  show _ = "Base" ++ show (proxy value (Proxy::Proxy b) :: Integer) ++ "Gad"
+  show _ = "Base" ++ show (value @b :: Integer) ++ "Gad"
 
 -- for RNS-style moduli
 instance (Show (ArgType a), Show (ArgType b)) => Show (ArgType (a,b)) where

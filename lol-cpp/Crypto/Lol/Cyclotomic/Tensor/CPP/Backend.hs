@@ -20,6 +20,7 @@ calls in a type-safe way.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -125,17 +126,17 @@ class (Tuple a) => ZqTuple a where
 
 instance (Reflects q Int64) => ZqTuple (ZqBasic q Int64) where
   type ModPairs (ZqBasic q Int64) = Int64
-  getModuli = tag $ proxy value (Proxy::Proxy q)
+  getModuli = tag $ value @q
 
 instance (Reflects q r, RealFrac r) => ZqTuple (RRq q r) where
   type ModPairs (RRq q r) = Int64
-  getModuli = tag $ round (proxy value (Proxy::Proxy q) :: r)
+  getModuli = tag $ round (value @q :: r)
 
 instance (ZqTuple a, ZqTuple b) => ZqTuple (a, b) where
   type ModPairs (a,b) = (ModPairs a, ModPairs b)
   getModuli =
     let as = proxy getModuli (Proxy::Proxy a)
-        bs = proxy getModuli (Proxy :: Proxy b)
+        bs = proxy getModuli (Proxy::Proxy b)
     in tag (as,bs)
 
 -- counts components in a nested tuple
