@@ -1,21 +1,52 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, PolyKinds,
-             ScopedTypeVariables, TypeFamilies #-}
+{-|
+Module      : Crypto.Lol.Types.Proto
+Description : Convenient interfaces for serialization with protocol buffers.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | Convenient interfaces for serialization with protocol buffers.
+Convenient interfaces for serialization with protocol buffers.
+-}
 
-module Crypto.Lol.Types.Proto where
+{-# LANGUAGE ConstraintKinds     #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
+
+module Crypto.Lol.Types.Proto
+(Protoable(..), msgPut, msgGet
+,uToString, uFromString
+,readProtoType, parseProtoFile
+,writeProtoType, writeProtoFile
+,ProtoReadable
+) where
+
+import Crypto.Proto.Lol.TypeRep (TypeRep(TypeRep))
 
 import Control.Monad.Except
-import Data.ByteString.Lazy hiding (map)
+import qualified Data.ByteString.Lazy as BS
 import Data.Foldable (toList)
-import Data.Sequence (fromList)
+import Data.Sequence
+import GHC.Fingerprint
+
+import Prelude hiding (length)
+import System.Directory
 
 import Text.ProtocolBuffers        (messageGet, messagePut)
+import Text.ProtocolBuffers.Basic  (uToString, uFromString)
 import Text.ProtocolBuffers.Header
+
+-- | Constraint synonym for end-to-end reading/parsing/writing of 'Protoable' types.
+type ProtoReadable a = (Protoable a, Wire (ProtoType a), ReflectDescriptor (ProtoType a))
 
 -- | Conversion between Haskell types and their protocol buffer representations.
 class Protoable a where
-  -- | The protocol buffer type for @a@.
+
   type ProtoType a
 
   -- | Convert from a type to its protocol buffer representation.
@@ -48,3 +79,38 @@ msgGet bs = do
   (msg, bs') <- messageGet bs
   p <- fromProto msg
   return (p, bs')
+
+-- | Read a serialized protobuffer from a file.
+readProtoType :: (ReflectDescriptor a, Wire a, MonadIO m, MonadError String m)
+                 => FilePath -> m a
+readProtoType file = do
+  fileExists <- liftIO $ doesFileExist file
+  unless fileExists $ throwError $
+    "Error reading " ++ file ++ ": file does not exist."
+  bs <- liftIO $ BS.readFile file
+  case messageGet bs of
+    (Left str) -> throwError $
+      "Error when reading from protocol buffer. Got string " ++ str
+    (Right (a,bs')) -> do
+      unless (BS.null bs') $ throwError
+        "Error when reading from protocol buffer. There were leftover bits!"
+      return a
+
+-- | Writes any auto-gen'd proto object to path/filename.
+writeProtoType :: (ReflectDescriptor a, Wire a) => FilePath -> a -> IO ()
+writeProtoType fileName = BS.writeFile fileName . messagePut
+
+-- | Read a protocol buffer stream at the given path and convert it to typed
+-- Haskell data.
+parseProtoFile :: (ProtoReadable a, MonadIO m, MonadError String m)
+  => FilePath -> m a
+parseProtoFile file = fromProto =<< readProtoType file
+
+-- | Write a protocol buffer stream for Haskell data to the given path.
+writeProtoFile :: (ProtoReadable a, MonadIO m) => FilePath -> a -> m ()
+writeProtoFile file = liftIO . writeProtoType file . toProto
+
+instance Protoable Fingerprint where
+  type ProtoType Fingerprint = TypeRep
+  toProto (Fingerprint a b) = TypeRep a b
+  fromProto (TypeRep a b) = return $ Fingerprint a b

@@ -1,0 +1,26 @@
+// proto messages for precomputation step of homomorphic PRF
+// evaluation and testing
+
+// These messages are just repeated messages from SHE.proto, used when multiple
+// operations (on different types) are done in sequence. This avoids having
+// to load messages for each step of a computation, which could be error prone
+// since the messages are type-specific.
+
+import "Lol.proto";
+import "SHE.proto";
+
+// run this:
+
+// hprotoc -I ../lol -a Lol.proto=Crypto.Proto -a SHE.proto=Crypto.Proto -p Crypto.Proto HomomPRF.proto
+
+message LinearFuncChain {
+  repeated LinearRq funcs    = 1;
+}
+
+message TunnelInfoChain {
+  repeated TunnelInfo hints = 1;
+}
+
+message RoundHintChain {
+  repeated KSHint hints = 1;
+}

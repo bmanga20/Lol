@@ -1,8 +1,25 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances,
-             KindSignatures, MultiParamTypeClasses, NoImplicitPrelude,
-             PolyKinds, ScopedTypeVariables, TypeApplications, UndecidableInstances #-}
+{-|
+Module      : Crypto.Lol.Reflects
+Description : Generic interface for reflecting types to values.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | Generic interface for reflecting types to values.
+Generic interface for reflecting types to values.
+-}
+
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Crypto.Lol.Reflects
 ( Reflects(..),

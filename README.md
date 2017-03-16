@@ -1,3 +1,6 @@
+
+[![Build Status](https://travis-ci.org/cpeikert/Lol.svg?branch=type-app)](https://travis-ci.org/cpeikert/Lol)
+
 This branch (type-app) converted Lol from using proxies to type application.
 This means that instead of writing `proxy valueFact (Proxy::Proxy m)`,
 you instead write `valueFact @m`. Unfortunately, we can't quite do this everywhere
@@ -31,23 +34,41 @@ This repository contains several Haskell libraries:
     lol-apps to transform plaintext descriptions of algorithms into
     their homomorphic counterparts.
 
-Installing lol:
+Developing in the lol ecosystem:
+Compiling the lol ecosystem takes a long time. If you are just doing development,
+you probably don't need to compile (with optimizations) the ecosystem. Instead,
+you can develop interactively. Run
+```
+> stack build lol lol-cpp lol-repa lol-tests lol-benches rlwe-challenges lol-apps --dependencies-only
+```
+to build all third-party dependencies of the lol ecosystem, then you can
+develop with
+```
+> ./ghci path/to/file
+```
+This command builds the C++ library for `lol-cpp` and the loads
+all imported files from the lol ecosystem from source.
 
-The easiest way to install Lol is to use stack, which is included in
-the [Haskell Platform](https://www.haskell.org/platform/).
+You can load all top-level executables with `./ghci AllMain.hs`.
+
+
+Installing Lol:
+
+If you want to run benchmarks or tests, you'll need to compile the ecosystem
+with optimizations. The easiest way to do this is to use stack, which is
+included in the [Haskell Platform](https://www.haskell.org/platform/).
 ```
 > stack setup
-> stack install lol
+> stack build lol
 ```
-You can run unit tests with `stack test lol`. You can run
-microbenchmarks with `stack bench lol`. You can configure the
-benchmarks by editing `lol/benchmarks/BenchConfig.hs`.
-
-Installing lol-apps:
+or
 ```
+> stack setup
 > stack install lol-apps
 ```
-You can run unit tests with `stack test lol-apps`. You can run
-benchmarks with `stack bench lol-apps`. An example of how to use each
-application is included and is built automatically when you install
+You can run unit tests with `stack test <package>`. You can run microbenchmarks with `stack bench <package>`. Currently `lol-cpp`, `lol-repa`, and `lol-apps`
+have tests and benchmarks.
+
+The `lol-apps` package includes examples of how to use each
+application. These are built automatically when you install
 lol-apps.

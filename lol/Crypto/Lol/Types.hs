@@ -1,19 +1,35 @@
+{-|
+Module      : Crypto.Lol.Types
+Description : Concrete types needed to instantiate cryptographic applications.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | Exports concrete types needed to instantiate cryptographic applications.
--- Specifically:
---
---   * "Crypto.Lol.Cyclotomic.Tensor.CTensor"
---   * "Crypto.Lol.Cyclotomic.Tensor.RepaTensor"
---   * "Crypto.Lol.Types.IrreducibleChar2"
---   * "Crypto.Lol.Types.Random"
---   * "Crypto.Lol.Types.RRq"
---   * "Crypto.Lol.Types.ZqBasic"
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\R{\mathbb{R}} \)
 
-module Crypto.Lol.Types ( module X ) where
+Exports concrete types needed to instantiate cryptographic applications.
+Specifically:
 
-import Crypto.Lol.Cyclotomic.Tensor.CTensor    as X
-import Crypto.Lol.Cyclotomic.Tensor.RepaTensor as X
-import Crypto.Lol.Types.IrreducibleChar2       as X ()
-import Crypto.Lol.Types.Random                 as X
-import Crypto.Lol.Types.RRq                    as X
-import Crypto.Lol.Types.ZqBasic                as X
+  * "Crypto.Lol.Types.Complex"
+  * "Crypto.Lol.Types.IrreducibleChar2"
+  * "Crypto.Lol.Types.Random"
+  * "Crypto.Lol.Types.RRq"
+  * "Crypto.Lol.Types.ZqBasic"
+-}
+
+-- EAC: See https://github.com/haskell/haddock/issues/563
+module Crypto.Lol.Types
+(module Crypto.Lol.Types.Random
+,Complex, roundComplex, cis, real, imag, fromReal -- see my comment in the bug report
+,RRq
+,ZqBasic, goodQs) where
+
+import Crypto.Lol.Types.Unsafe.Complex   hiding (Complex')
+import Crypto.Lol.Types.IrreducibleChar2 ()
+import Crypto.Lol.Types.Random
+import Crypto.Lol.Types.Unsafe.RRq       hiding (RRq')
+import Crypto.Lol.Types.Unsafe.ZqBasic   hiding (ZqB)

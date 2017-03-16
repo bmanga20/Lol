@@ -1,3 +1,16 @@
+{-|
+Module      : Crypto.Lol.Gadget
+Description : Interfaces for "gadgets," decomposition, and error correction.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+Interfaces for "gadgets," decomposition, and error correction.
+-}
+
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -10,8 +23,6 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-
--- | Interfaces for "gadgets," decomposition, and error correction.
 
 module Crypto.Lol.Gadget
 ( Gadget(..), Decompose(..), Correct(..)

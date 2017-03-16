@@ -1,5 +1,24 @@
-{-# LANGUAGE AllowAmbiguousTypes     #-}
-{-# LANGUAGE CPP                     #-}
+{-|
+Module      : Crypto.Lol.Cyclotomic.Tensor
+Description : Interface for cyclotomic tensors, and
+              helper functions for tensor indexing.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\Tw{\text{Tw}} \)
+  \( \def\Tr{\text{Tr}} \)
+  \( \def\CRT{\text{CRT}} \)
+  \( \def\O{\mathcal{O}} \)
+
+Interface for cyclotomic tensors, and helper functions for tensor
+indexing.
+-}
+
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE FlexibleContexts        #-}
@@ -13,18 +32,7 @@
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
-#if __GLASGOW_HASKELL__ >= 800
 {-# LANGUAGE UndecidableSuperClasses #-}
-#endif
-
--- | \( \def\Z{\mathbb{Z}} \)
---   \( \def\Tw{\text{Tw}} \)
---   \( \def\Tr{\text{Tr}} \)
---   \( \def\CRT{\text{CRT}} \)
---   \( \def\O{\mathcal{O}} \)
---
--- Interface for cyclotomic tensors, and helper functions for tensor
--- indexing.
 
 module Crypto.Lol.Cyclotomic.Tensor
 ( Tensor(..)
@@ -35,7 +43,7 @@ module Crypto.Lol.Cyclotomic.Tensor
 , Kron, indexK, gCRTK, gInvCRTK, twCRTs
 -- * Tensor indexing
 , zmsToIndexFact
-, toIndexPair, fromIndexPair, indexInfo
+, indexInfo
 , extIndicesPowDec, extIndicesCRT, extIndicesCoeffs
 , baseIndicesPow, baseIndicesDec, baseIndicesCRT
 , digitRev

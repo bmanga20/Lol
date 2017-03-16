@@ -1,14 +1,32 @@
-{-# LANGUAGE AllowAmbiguousTypes, ConstraintKinds, CPP, DataKinds, GADTs,
-             InstanceSigs, KindSignatures, PolyKinds, ScopedTypeVariables,
-             RankNTypes, TemplateHaskell, TypeApplications, TypeFamilies, TypeOperators,
-             UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
-#if __GLASGOW_HASKELL__ >= 800
-{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
-#endif
+{-|
+Module      : Crypto.Lol.FactoredDefs
+Description : Internal module.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | This sub-module exists only because we can't define and use
--- template Haskell splices in the same module.
+This sub-module exists only because we can't define and use
+template Haskell splices in the same module.
+-}
+
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE InstanceSigs         #-}
+{-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE PolyKinds            #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS_GHC -fno-warn-unused-binds          #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 module Crypto.Lol.FactoredDefs
 (
@@ -414,7 +432,7 @@ radicalPP (p,_) = p
 -- | The odd radical of a prime power.
 oddRadicalPP (2,_) = 1
 oddRadicalPP (p,_) = p
-
+-- | Value of a 'PrimeBin'.
 valueP :: PrimeBin -> Int
 valueP (P p) = binToInt p
 
@@ -467,6 +485,7 @@ ppDec pp@(p,e) = tySynD (mkName $ "PP" ++ show (p^e)) [] $ ppType pp
 fDec :: Int -> DecQ
 fDec n = tySynD (mkName $ 'F' : show n) [] $ fType n
 
+-- | Converts input to its data-level 'Factored' representation.
 intToFact :: Int -> Factored
 intToFact m =
   let fcts = factorize m

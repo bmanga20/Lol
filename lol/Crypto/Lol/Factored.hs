@@ -1,12 +1,25 @@
-{-# LANGUAGE DataKinds, TemplateHaskell, TupleSections #-}
+{-|
+Module      : Crypto.Lol.Factored
+Description : Type-level factored naturals.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | \( \def\lcm{\text{lcm}} \)
---
--- This module defines types and operations for type-level
--- representation and manipulation of natural numbers, as represented
--- by their prime-power factorizations.  It relies on Template
--- Haskell, so parts of the documentation may be difficult to read.
--- See source-level comments for further details.
+  \( \def\lcm{\text{lcm}} \)
+
+This module defines types and operations for type-level
+representation and manipulation of natural numbers, as represented
+by their prime-power factorizations.  It relies on Template
+Haskell, so parts of the documentation may be difficult to read.
+See source-level comments for further details.
+-}
+
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections   #-}
 
 module Crypto.Lol.Factored
 ( module Crypto.Lol.FactoredDefs

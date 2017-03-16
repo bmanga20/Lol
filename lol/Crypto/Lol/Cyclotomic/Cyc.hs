@@ -1,3 +1,38 @@
+{-|
+Module      : Crypto.Lol.Cyclotomic.Cyc
+Description : An implementation of cyclotomic rings that hides the
+              internal representations of ring elements.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\F{\mathbb{F}} \)
+  \( \def\Q{\mathbb{Q}} \)
+  \( \def\Tw{\text{Tw}} \)
+  \( \def\Tr{\text{Tr}} \)
+  \( \def\O{\mathcal{O}} \)
+
+An implementation of cyclotomic rings that hides the
+internal representations of ring elements (e.g., the choice of
+basis), and also offers more efficient storage and operations on
+subring elements (including elements from the base ring itself).
+
+For an implementation that allows (and requires) the programmer to
+control the underlying representation, see
+"Crypto.Lol.Cyclotomic.UCyc".
+
+__WARNING:__ as with all fixed-point arithmetic, the functions
+associated with 'Cyc' may result in overflow (and thereby
+incorrect answers and potential security flaws) if the input
+arguments are too close to the bounds imposed by the base type.
+The acceptable range of inputs for each function is determined by
+the internal linear transforms and other operations it performs.
+-}
+
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -13,28 +48,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
--- | \( \def\Z{\mathbb{Z}} \)
---   \( \def\F{\mathbb{F}} \)
---   \( \def\Q{\mathbb{Q}} \)
---   \( \def\Tw{\text{Tw}} \)
---   \( \def\Tr{\text{Tr}} \)
---   \( \def\O{\mathcal{O}} \)
---
--- An implementation of cyclotomic rings that hides the
--- internal representations of ring elements (e.g., the choice of
--- basis), and also offers more efficient storage and operations on
--- subring elements (including elements from the base ring itself).
---
--- For an implementation that allows (and requires) the programmer to
--- control the underlying representation, see
--- "Crypto.Lol.Cyclotomic.UCyc".
---
--- __WARNING:__ as with all fixed-point arithmetic, the functions
--- associated with 'Cyc' may result in overflow (and thereby
--- incorrect answers and potential security flaws) if the input
--- arguments are too close to the bounds imposed by the base type.
--- The acceptable range of inputs for each function is determined by
--- the internal linear transforms and other operations it performs.
+
 
 module Crypto.Lol.Cyclotomic.Cyc
 (
@@ -78,11 +92,9 @@ import Control.Arrow
 import Control.DeepSeq
 -- GHC warning is wrong: https://ghc.haskell.org/trac/ghc/ticket/12067
 import Control.Monad.Identity
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 import Data.Coerce
 import Data.Traversable
-
-import Test.QuickCheck
 
 -- | Represents a cyclotomic ring such as \(\Z[\zeta_m]\),
 -- \(\Z_q[\zeta_m]\), and \(\Q[\zeta_m]\) in an explicit
@@ -612,13 +624,18 @@ instance (Random r, Tensor t, Fact m, UCRTElt t r) => Random (Cyc t m r) where
 
   randomR _ = error "randomR non-sensical for Cyc"
 
-instance (Arbitrary (UCyc t m P r)) => Arbitrary (Cyc t m r) where
-  arbitrary = Pow <$> arbitrary
-  shrink = shrinkNothing
-
 instance (Fact m, CElt t r, Protoable (UCyc t m D r))
          => Protoable (Cyc t m r) where
   type ProtoType (Cyc t m r) = ProtoType (UCyc t m D r)
   toProto (Dec uc) = toProto uc
   toProto x = toProto $ toDec' x
   fromProto x = Dec <$> fromProto x
+
+instance (Show r, Show (CRTExt r), Fact m, TElt t r, TElt t (CRTExt r), Tensor t)
+  => Show (Cyc t m r) where
+  show (Pow x) = "Pow " ++ show x
+  show (Dec x) = "Dec " ++ show x
+  show (CRT (Left x)) = "CRT " ++ show x
+  show (CRT (Right x)) = "CRT " ++ show x
+  show (Scalar x) = "Scalar " ++ show x
+  show (Sub x) = "Sub " ++ show x

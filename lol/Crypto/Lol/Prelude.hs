@@ -1,6 +1,23 @@
-{-# LANGUAGE AllowAmbiguousTypes        #-}
+{-|
+Module      : Crypto.Lol.Prelude
+Description : Alternate Prelude.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\C{\mathbb{C}} \)
+
+A substitute for the Prelude that is more suitable for Lol.  This
+module exports most of the Numeric Prelude and other frequently
+used modules, plus some low-level classes, missing instances, and
+assorted utility functions.
+-}
+
 {-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -18,14 +35,6 @@
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
--- | \( \def\Z{\mathbb{Z}} \)
---   \( \def\C{\mathbb{C}} \)
---
--- A substitute for the Prelude that is more suitable for Lol.  This
--- module exports most of the Numeric Prelude and other frequently
--- used modules, plus some low-level classes, missing instances, and
--- assorted utility functions.
-
 module Crypto.Lol.Prelude
 (
 -- * Classes and families
@@ -38,7 +47,7 @@ module Crypto.Lol.Prelude
 -- * Numeric
 , module Crypto.Lol.Types.Numeric
 -- * Complex
-, module Crypto.Lol.Types.Complex
+, module Crypto.Lol.Types.Unsafe.Complex
 -- * Factored
 , module Crypto.Lol.Factored
 , module Crypto.Lol.FactoredT
@@ -51,7 +60,6 @@ module Crypto.Lol.Prelude
 
 import Crypto.Lol.Factored
 import Crypto.Lol.FactoredT
-import Crypto.Lol.Types.Complex
 import Crypto.Lol.Types.Numeric
 
 import Algebra.Field          as Field (C)
@@ -62,7 +70,7 @@ import Control.Applicative
 import Control.Arrow
 import Control.DeepSeq
 import Control.Monad.Identity
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift)
 import Data.Coerce
 import Data.Default
 import Data.Functor.Trans.Tagged
@@ -74,9 +82,6 @@ import Data.Singletons
 import qualified Data.Vector.Unboxed          as U
 import           Data.Vector.Unboxed.Deriving
 
-#if __GLASGOW_HASKELL__ < 800
-instance NFData (Proxy (a :: k)) where rnf Proxy = ()
-#endif
 deriving instance NFData (m a) => NFData (TaggedT s m a)
 deriving instance (MonadRandom m) => MonadRandom (TaggedT (tag :: k) m)
 

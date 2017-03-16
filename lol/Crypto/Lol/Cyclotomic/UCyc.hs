@@ -1,3 +1,30 @@
+{-|
+Module      : Crypto.Lol.Cyclotomic.UCyc
+Description : A low-level implementation of cyclotomic rings.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
+
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\F{\mathbb{F}} \)
+  \( \def\Q{\mathbb{Q}} \)
+  \( \def\O{\mathcal{O}} \)
+
+A low-level implementation of cyclotomic rings that allows (and
+requires) the programmer to control the underlying representation
+of ring elements, i.e., powerful, decoding, or CRT basis.
+
+__WARNING:__ as with all fixed-point arithmetic, the functions
+associated with 'UCyc' may result in overflow (and thereby
+incorrect answers and potential security flaws) if the input
+arguments are too close to the bounds imposed by the base type.
+The acceptable range of inputs for each function is determined by
+the internal linear transforms and other operations it performs.
+-}
+
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -13,22 +40,6 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
-
--- | \( \def\Z{\mathbb{Z}} \)
---   \( \def\F{\mathbb{F}} \)
---   \( \def\Q{\mathbb{Q}} \)
---   \( \def\O{\mathcal{O}} \)
---
--- A low-level implementation of cyclotomic rings that allows (and
--- requires) the programmer to control the underlying representation
--- of ring elements, i.e., powerful, decoding, or CRT basis.
---
--- __WARNING:__ as with all fixed-point arithmetic, the functions
--- associated with 'UCyc' may result in overflow (and thereby
--- incorrect answers and potential security flaws) if the input
--- arguments are too close to the bounds imposed by the base type.
--- The acceptable range of inputs for each function is determined by
--- the internal linear transforms and other operations it performs.
 
 module Crypto.Lol.Cyclotomic.UCyc
 (
@@ -69,11 +80,10 @@ import Control.Applicative    as A
 import Control.Arrow
 import Control.DeepSeq
 import Control.Monad.Identity (Identity(..))
-import Control.Monad.Random
+import Control.Monad.Random hiding (lift, ap)
 import Data.Foldable          as F
 import Data.Maybe
 import Data.Traversable
-import Test.QuickCheck
 
 import Crypto.Lol.Types.Proto
 
@@ -676,16 +686,6 @@ instance (Random r, UCRTElt t r, Fact m)
 
   randomR _ = error "randomR non-sensical for UCyc"
 
-instance (Arbitrary (t m r)) => Arbitrary (UCyc t m P r) where
-  arbitrary = Pow <$> arbitrary
-  shrink = shrinkNothing
-
-instance (Arbitrary (t m r)) => Arbitrary (UCyc t m D r) where
-  arbitrary = Dec <$> arbitrary
-  shrink = shrinkNothing
-
--- no Arbitrary for C or E due to invariant
-
 instance (Tensor t, Fact m, NFElt r, TElt t r, TElt t (CRTExt r))
          => NFData (UCyc t m rep r) where
   rnf (Pow x)      = rnf x \\ entailNFDataT @t @m @r
@@ -697,3 +697,16 @@ instance (Protoable (t m r)) => Protoable (UCyc t m D r) where
   type ProtoType (UCyc t m D r) = ProtoType (t m r)
   toProto (Dec t) = toProto t
   fromProto t = Dec <$> fromProto t
+
+instance (Show r, Fact m, TElt t r, Tensor t) => Show (UCyc t m P r) where
+  show (Pow x) = "UPow " ++ show x \\ witness entailShowT x
+
+instance (Show r, Fact m, TElt t r, Tensor t) => Show (UCyc t m D r) where
+  show (Dec x) = "UDec " ++ show x \\ witness entailShowT x
+
+instance (Show r, Fact m, TElt t r, Tensor t) => Show (UCyc t m C r) where
+  show (CRTC _ x) = "UCRTC " ++ show x \\ witness entailShowT x
+
+instance (Show (CRTExt r), Fact m, TElt t (CRTExt r), Tensor t)
+  => Show (UCyc t m E r) where
+  show (CRTE _ x) = "UCRTE " ++ show x \\ witness entailShowT x

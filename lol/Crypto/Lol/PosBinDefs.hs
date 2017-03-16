@@ -1,14 +1,35 @@
-{-# LANGUAGE ConstraintKinds, CPP, DataKinds, GADTs, InstanceSigs,
-             KindSignatures, PolyKinds, RankNTypes,
-             RebindableSyntax, ScopedTypeVariables, TemplateHaskell,
-             TypeFamilies, UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-#if __GLASGOW_HASKELL__ >= 800
-{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
-#endif
+{-|
+Module      : Crypto.Lol.PosBinDefs
+Description : Internal module.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | This sub-module exists only because we can't define and use
--- template Haskell splices in the same module.
+  \( \def\Z{\mathbb{Z}} \)
+  \( \def\C{\mathbb{C}} \)
+
+This sub-module exists only because we can't define and use
+template Haskell splices in the same module.
+-}
+
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE InstanceSigs         #-}
+{-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE PolyKinds            #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE RebindableSyntax     #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS_GHC -fno-warn-duplicate-exports     #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 module Crypto.Lol.PosBinDefs
 ( -- * Positive naturals in Peano representation

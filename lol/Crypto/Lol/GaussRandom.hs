@@ -1,6 +1,18 @@
-{-# LANGUAGE RebindableSyntax, ScopedTypeVariables #-}
+{-|
+Module      : Crypto.Lol.GaussRandom
+Description : Gaussian sampling.
+Copyright   : (c) Eric Crockett, 2011-2017
+                  Chris Peikert, 2011-2017
+License     : GPL-3
+Maintainer  : ecrockett0@email.com
+Stability   : experimental
+Portability : POSIX
 
--- | Functions for sampling from a continuous Gaussian distribution
+Functions for sampling from a continuous Gaussian distribution.
+-}
+
+{-# LANGUAGE RebindableSyntax    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Crypto.Lol.GaussRandom
 ( realGaussian, realGaussians ) where

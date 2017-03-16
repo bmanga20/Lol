@@ -1,6 +1,18 @@
 Changelog for lol project
 ================================
 
+0.6.0.0
+----
+ * Support for serializing ring products, linear functions, and TypeReps.
+ * Split previous lol package into separate tensor packages lol-cpp and lol-repa
+   and utility packages lol-benches and lol-tests.
+ * Moved test and benchmark code to packages lol-tests and lol-benches, respectively.
+ * Simpler tests and benchmarks (though microbenchmarks might be slightly slower
+   than 0.5.0.2).
+ * Fixed minor bug in IrreducibleChar2.hs
+ * Moved tensor-specific instances (Elt, Unbox, etc) to tensor packages
+   (lol-cpp and lol-repa).
+
 0.5.0.2
 ----
  * Updates to README.
