@@ -23,6 +23,7 @@ Symmetric-key somewhat homomorphic encryption.  See Section 4 of
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -521,7 +522,7 @@ tunnelInfo f skout (SK _ sin) = -- generate hints
        ps = proxy powBasis (Proxy::Proxy e')
        comps = (evalLin f' . (adviseCRT sin *)) <$> ps
    in TInfo f'q <$> CM.mapM (ksHint skout) comps)
-    \\ lcmDivides (Proxy::Proxy r) (Proxy::Proxy e')
+    \\ lcmDivides @r @e'
 
 -- | Constraint synonym for ring tunneling.
 type TunnelCtx t r s e' r' s' zp zq gad =
@@ -554,7 +555,7 @@ tunnelCT (TInfo f'q hints) ct =
        c1s' = zipWith switch hints (embed <$> c1s)
        c1' = sum c1s'
    in CT MSD 0 s $ P.const c0' + c1')
-    \\ lcmDivides (Proxy::Proxy r) (Proxy::Proxy e')
+    \\ lcmDivides @r @e'
 
 instance (Protoable r, ProtoType r ~ R) => Protoable (SK r) where
   type ProtoType (SK r) = P.SecretKey

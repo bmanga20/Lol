@@ -12,6 +12,7 @@ This sub-module exists only because we can't define and use
 template Haskell splices in the same module.
 -}
 
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE GADTs                #-}
@@ -21,6 +22,7 @@ template Haskell splices in the same module.
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}

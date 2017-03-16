@@ -18,6 +18,7 @@ Benchmarks for SymmSHE.
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -138,12 +139,12 @@ bench_tunnel :: forall t e e' r r' s s' z zp zq gad .
   => PT (Cyc t r zp) -> SK (Cyc t r' z) -> SK (Cyc t s' z) -> Bench '(t,r,r',s,s',zp,zq,gad)
 bench_tunnel pt skin skout = benchM $ do
   x <- encrypt skin pt
-  let crts :: [Cyc t s zp] = proxy crtSet (Proxy::Proxy e) \\ gcdDivides (Proxy::Proxy r) (Proxy::Proxy s)
-      r = proxy totientFact (Proxy::Proxy r)
-      e = proxy totientFact (Proxy::Proxy e)
+  let crts :: [Cyc t s zp] = (untag $ crtSet @e) \\ gcdDivides @r @s
+      r = totientFact @r
+      e = totientFact @e
       dim = r `div` e
       -- only take as many crts as we need
       -- otherwise linearDec fails
-      linf :: Linear t zp e r s = linearDec (take dim crts) \\ gcdDivides (Proxy::Proxy r) (Proxy::Proxy s)
+      linf :: Linear t zp e r s = linearDec (take dim crts) \\ gcdDivides @r @s
   hints :: TunnelInfo gad t e r s e' r' s' zp zq <- tunnelInfo linf skout skin
   return $ bench (tunnelCT hints :: CT r zp (Cyc t r' zq) -> CT s zp (Cyc t s' zq)) x

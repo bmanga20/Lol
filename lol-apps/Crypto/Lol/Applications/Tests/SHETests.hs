@@ -17,6 +17,7 @@ Tests for SymmSHE.
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -234,13 +235,13 @@ prop_ringTunnel :: forall t e r s e' r' s' z zp zq gad .
    e ~ FGCD r s, Fact e)
   => PT (Cyc t r zp) -> SK (Cyc t r' z) -> SK (Cyc t s' z) -> Test '(t,r,r',s,s',zp,zq,gad)
 prop_ringTunnel x skin skout = testIO $ do
-  let totr = proxy totientFact (Proxy::Proxy r)
-      tote = proxy totientFact (Proxy::Proxy e)
+  let totr = totientFact @r
+      tote = totientFact @e
       basisSize = totr `div` tote
   -- choose a random linear function of the appropriate size
   bs :: [Cyc t s zp] <- replicateM basisSize getRandom
-  let f = linearDec bs \\ (gcdDivides (Proxy::Proxy r) (Proxy::Proxy s)) :: Linear t zp e r s
-      expected = evalLin f x \\ (gcdDivides (Proxy::Proxy r) (Proxy::Proxy s))
+  let f = linearDec bs \\ (gcdDivides @r @s) :: Linear t zp e r s
+      expected = evalLin f x \\ (gcdDivides @r @s)
   y :: CT r zp (Cyc t r' zq) <- encrypt skin x
   hints :: TunnelInfo gad t e r s e' r' s' zp zq <- tunnelInfo f skout skin
   let y' = tunnelCT hints y :: CT s zp (Cyc t s' zq)

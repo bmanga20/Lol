@@ -43,7 +43,7 @@ module Crypto.Lol.Prelude
 , Subgroup(..)
 , Reduce(..), LiftOf, Lift, Lift'(..), Rescale(..), Encode(..), msdToLSD
 , CharOf
-, wrapAmbiguous
+--, wrapAmbiguous
 -- * Numeric
 , module Crypto.Lol.Types.Numeric
 -- * Complex
@@ -60,6 +60,7 @@ module Crypto.Lol.Prelude
 
 import Crypto.Lol.Factored
 import Crypto.Lol.FactoredT
+import Crypto.Lol.Types.Unsafe.Complex (Complex(), roundComplex, cis, real, imag, fromReal)
 import Crypto.Lol.Types.Numeric
 
 import Algebra.Field          as Field (C)
@@ -314,5 +315,5 @@ withWitnessT :: forall n mon r .
 withWitnessT t wit = withSingI wit $ proxyT t (Proxy::Proxy n)
 {-# INLINABLE withWitnessT #-}
 
-wrapAmbiguous :: forall (a :: k) b . (SingI a) => (forall (t :: k) . (SingI t) => b) -> Tagged a b
-wrapAmbiguous f = tag $ f @a
+--wrapAmbiguous :: forall (a :: k) b . (SingI a) => (forall (t :: k) . (SingI t) => b) -> Tagged a b
+--wrapAmbiguous f = tag $ f @a

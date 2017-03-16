@@ -24,6 +24,7 @@ Provides applicative-like functions for indexed vectors.
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
@@ -107,13 +108,13 @@ instance (Fact m) => Protoable (IZipVector m Int64) where
   type ProtoType (IZipVector m Int64) = R
 
   toProto (IZipVector xs') =
-    let m = fromIntegral $ proxy valueFact (Proxy::Proxy m)
+    let m = fromIntegral $ valueFact @m
         xs = S.fromList $ V.toList xs'
     in R{..}
 
   fromProto R{..} = do
-    let m' = proxy valueFact (Proxy::Proxy m) :: Int
-        n = proxy totientFact (Proxy::Proxy m)
+    let m' = valueFact @m :: Int
+        n = totientFact @m
         ys' = V.fromList $ F.toList xs
         len = F.length xs
     unless (m' == fromIntegral m) $ throwError $
@@ -128,16 +129,16 @@ instance (Fact m, Reflects q Int64) => Protoable (IZipVector m (ZqBasic q Int64)
   type ProtoType (IZipVector m (ZqBasic q Int64)) = RqProduct
 
   toProto (IZipVector xs') =
-    let m = fromIntegral $ proxy valueFact (Proxy::Proxy m)
+    let m = fromIntegral $ valueFact @m
         q = fromIntegral (proxy value (Proxy::Proxy q) :: Int64)
         xs = S.fromList $ V.toList $ V.map LP.lift xs'
     in RqProduct $ S.singleton Rq1{..}
 
   fromProto (RqProduct xs') = do
     let rqlist = F.toList xs'
-        m' = proxy valueFact (Proxy::Proxy m) :: Int
+        m' = valueFact @m :: Int
         q' = proxy value (Proxy::Proxy q) :: Int64
-        n = proxy totientFact (Proxy::Proxy m)
+        n = totientFact @m
     unless (F.length rqlist == 1) $ throwError $
       "An error occurred while reading the proto type for CT.\n\
       \Expected a list of one Rq, but list has length " ++ show (F.length rqlist)
@@ -159,16 +160,16 @@ instance (Fact m, Reflects q Double) => Protoable (IZipVector m (RRq q Double)) 
   type ProtoType (IZipVector m (RRq q Double)) = KqProduct
 
   toProto (IZipVector xs') =
-    let m = fromIntegral $ proxy valueFact (Proxy::Proxy m)
+    let m = fromIntegral $ valueFact @m
         q = round (proxy value (Proxy::Proxy q) :: Double)
         xs = S.fromList $ V.toList $ V.map LP.lift xs'
     in KqProduct $ S.singleton Kq1{..}
 
   fromProto (KqProduct xs') = do
     let rqlist = F.toList xs'
-        m' = proxy valueFact (Proxy::Proxy m) :: Int
+        m' = valueFact @m :: Int
         q' = round (proxy value (Proxy::Proxy q) :: Double)
-        n = proxy totientFact (Proxy::Proxy m)
+        n = totientFact @m
     unless (F.length rqlist == 1) $ throwError $
       "An error occurred while reading the proto type for CT.\n\
       \Expected a list of one Rq, but list has length " ++ show (F.length rqlist)

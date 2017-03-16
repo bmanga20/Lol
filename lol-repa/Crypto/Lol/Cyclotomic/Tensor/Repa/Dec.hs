@@ -15,6 +15,7 @@ Linear transforms and operations related to the decoding basis.
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Crypto.Lol.Cyclotomic.Tensor.Repa.Dec
 ( tGaussianDec', gSqNormDec' ) where

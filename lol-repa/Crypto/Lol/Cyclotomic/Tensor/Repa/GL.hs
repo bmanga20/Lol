@@ -19,6 +19,7 @@ The @G@ and @L@ transforms for Repa arrays.
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Crypto.Lol.Cyclotomic.Tensor.Repa.GL
 ( fL, fLInv, fGPow, fGDec, fGInvPow, fGInvDec

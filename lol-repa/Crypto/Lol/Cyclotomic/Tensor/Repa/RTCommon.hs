@@ -25,6 +25,7 @@ on Repa arrays.
 {-# LANGUAGE RebindableSyntax           #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeOperators              #-}
 
 module Crypto.Lol.Cyclotomic.Tensor.Repa.RTCommon

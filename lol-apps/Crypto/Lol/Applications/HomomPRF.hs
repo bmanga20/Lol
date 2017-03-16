@@ -23,6 +23,7 @@ Homomorphic evaluation of the PRF from <http://web.eecs.umich.edu/~cpeikert/pubs
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -398,9 +399,9 @@ instance (ExtendLinIdx e r s e' r' s', -- tunnelInfoChain
 
   tunnelInfoChain sk = do
     skout <- genSKWithVar sk
-    let crts = proxy crtSet (Proxy::Proxy e)
-        r = proxy totientFact (Proxy::Proxy r)
-        e = proxy totientFact (Proxy::Proxy e)
+    let crts = untag $ crtSet @e
+        r = totientFact @r
+        e = totientFact @e
         dim = r `div` e
         -- only take as many crts as we need
         -- otherwise linearDec fails
@@ -518,9 +519,9 @@ instance (e ~ FGCD r s, e `Divides` r, e `Divides` s, PTTunnel t (s ': rngs) zp,
           )
   => PTTunnel t (r ': s ': rngs) zp where
   ptTunnelFuncs =
-    let crts = proxy crtSet (Proxy::Proxy e)
-        r = proxy totientFact (Proxy::Proxy r)
-        e = proxy totientFact (Proxy::Proxy e)
+    let crts = untag $ crtSet @e
+        r = totientFact @r
+        e = totientFact @e
         dim = r `div` e
         -- only take as many crts as we need
         -- otherwise linearDec fails

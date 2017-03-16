@@ -19,6 +19,7 @@ Interface for cyclotomic tensors, and helper functions for tensor
 indexing.
 -}
 
+{-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE FlexibleContexts        #-}

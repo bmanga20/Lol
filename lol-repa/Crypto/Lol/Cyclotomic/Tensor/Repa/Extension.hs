@@ -11,6 +11,7 @@ Portability : POSIX
 RT-specific functions for embedding/twacing in various bases.
 -}
 
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
@@ -169,28 +170,23 @@ crtSetDec' = return $
 
 -- convert memoized reindexing Vectors to Arrays, for convenience and speed
 
-extIndicesPowDec :: forall m m' . (m `Divides` m')
-                    => Array U DIM1 DIM1
+extIndicesPowDec :: forall m m' . (m `Divides` m') => Array U DIM1 DIM1
 extIndicesPowDec =
   let idxs = T.extIndicesPowDec @m @m'
   in fromUnboxed (Z :. U.length idxs) $ U.map (Z:.) idxs
 
-extIndicesCRT :: forall m m' . (m `Divides` m')
-                 => Array U DIM2 DIM1
+extIndicesCRT :: forall m m' . (m `Divides` m') => Array U DIM2 DIM1
 extIndicesCRT =
   let phi = totientFact @m
       phi' = totientFact @m'
       idxs = T.extIndicesCRT @m @m'
   in fromUnboxed (Z :. phi :. phi' `div` phi) $ U.map (Z:.) idxs
 
-baseIndicesPow :: forall m m' . (m `Divides` m')
-                  => Array U DIM1 (Int,DIM1)
+baseIndicesPow :: forall m m' . (m `Divides` m') => Array U DIM1 (Int,DIM1)
 
-baseIndicesDec :: forall m m' . (m `Divides` m')
-                  => Array U DIM1 (Maybe (DIM1, Bool))
+baseIndicesDec :: forall m m' . (m `Divides` m') => Array U DIM1 (Maybe (DIM1, Bool))
 
-baseIndicesCRT :: forall m m' . (m `Divides` m')
-                  => Array U DIM1 DIM1
+baseIndicesCRT :: forall m m' . (m `Divides` m') => Array U DIM1 DIM1
 
 baseIndicesPow =
   let idxs = T.baseIndicesPow @m @m'

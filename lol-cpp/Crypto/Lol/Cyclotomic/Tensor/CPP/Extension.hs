@@ -38,7 +38,6 @@ import Crypto.Lol.Types.ZmStar
 
 
 import Control.Applicative hiding (empty)
-import Control.Monad.Trans (lift)
 
 import           Data.Maybe
 import           Data.Reflection      (reify)
@@ -115,7 +114,7 @@ twaceCRT' :: forall mon m m' r .
 twaceCRT' = tagT $ do
   g' <- untagT $ kronToVec @m' gCRTK
   gInv <- untagT $ kronToVec @m gInvCRTK
-  (_, m'hatinv) <- crtInfo @m'
+  (_, m'hatinv) <- untagT $ crtInfo @mon @r @m' -- @(TaggedT '(m,m') mon) @r
   embed <- untagT $ embedCRT' @m @m'
   let indices = extIndicesCRT @m @m'
       phi = totientFact @m

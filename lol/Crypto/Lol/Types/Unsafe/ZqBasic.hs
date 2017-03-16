@@ -32,6 +32,7 @@ if we "simplify" constraints in this module. For example, replace the
 {-# LANGUAGE RebindableSyntax           #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
