@@ -7,12 +7,16 @@ module Crypto.Alchemy.Language.PT where
 
 import Crypto.Lol hiding (Pos(..))
 import Data.Type.Natural
+import Data.Typeable
 import Crypto.Lol.Types.ZPP
 import Crypto.Lol.Cyclotomic.Tensor
 
 -- | Symantics for leveled plaintext operations of some depth @d@.
 
 class SymPT expr where
+
+  -- EAC: Constraints on these functions are precisely those neede for the
+  -- SymPT metacircular evaluator in PTEval.hs
 
   {- CJP: scrapping entailment here for the subtle reason that in the
  PT-to-CT compiler, the Additive instance for CT needs a weird extra
@@ -47,8 +51,8 @@ class SymPT expr where
           expr ('S d) rp -> expr ('S d) rp -> expr d rp
 
   tunnelPT :: (e ~ FGCD r s, e `Divides` r, e `Divides` s, CElt t zp, ZPP zp,
-               TElt t (ZpOf zp))
-           => expr d (Cyc t r zp) -> expr d (Cyc t s zp)
+               TElt t (ZpOf zp), Typeable s)
+           => Linear t zp e r s -> expr d (Cyc t r zp) -> expr d (Cyc t s zp)
 
 (-#) :: (SymPT expr, rp ~ Cyc t m zp, Fact m, CElt t zp)
      => expr d rp -> expr d rp -> expr d rp

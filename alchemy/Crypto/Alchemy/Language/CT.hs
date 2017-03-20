@@ -13,6 +13,9 @@ import Data.Constraint
 
 class SymCT expr where
 
+  -- EAC: Constraints on these functions are precisely those neede for the
+  -- SymCT metacircular evaluator in CTEval.hs
+
   -- | Entailment of ring structure.
   entailRingSymCT :: Tagged (expr ct)
                      (Ring ct :- Ring (expr ct))
@@ -21,11 +24,14 @@ class SymCT expr where
                -- above constraints copied from rescaleLinearCT
                expr (CT m zp (Cyc t m' zq')) -> expr (CT m zp (Cyc t m' zq))
 
-  addPublicCT :: (AddPublicCtx t m m' zp zq)
-              => Cyc t m zp -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+  addPublicCT :: (AddPublicCtx t m m' zp zq, ct ~ CT m zp (Cyc t m' zq))
+              => Cyc t m zp -> expr ct -> expr ct
 
-  mulPublicCT :: (MulPublicCtx t m m' zp zq)
-              => Cyc t m zp -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+  mulPublicCT :: (MulPublicCtx t m m' zp zq, ct ~ CT m zp (Cyc t m' zq))
+              => Cyc t m zp -> expr ct -> expr ct
+
+  keySwitchQuadCT :: (KeySwitchCtx gad t m' zp zq zq', ct ~ CT m zp (Cyc t m' zq))
+                  => KSQuadCircHint gad (Cyc t m' zq') -> expr ct -> expr ct
 
   tunnelCT :: (TunnelCtx t r s e' r' s' zp zq gad, e ~ FGCD r s)
            => TunnelInfo gad t e r s e' r' s' zp zq

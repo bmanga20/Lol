@@ -37,6 +37,7 @@ library
                        Crypto.Alchemy.Language.IR
                        Crypto.Alchemy.Language.Lam
                        Crypto.Alchemy.Language.PT
+                       Crypto.Alchemy.Common
 
 -- test-suite alchemy-test
 --   type:                exitcode-stdio-1.0

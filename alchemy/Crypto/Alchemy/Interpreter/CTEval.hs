@@ -27,4 +27,5 @@ instance SymCT I where
   rescaleCT = I . rescaleLinearCT . unI
   addPublicCT a = I . addPublic a . unI
   mulPublicCT a = I . mulPublic a . unI
+  keySwitchQuadCT hint = I . keySwitchQuadCirc hint . unI
   tunnelCT info = I . SHE.tunnelCT info . unI

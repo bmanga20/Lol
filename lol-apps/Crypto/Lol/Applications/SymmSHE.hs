@@ -53,7 +53,7 @@ SK, PT, CT -- don't export constructors!
 , AddPublicCtx, MulPublicCtx, ModSwitchPTCtx
 , KeySwitchCtx, KSHintCtx
 , GenTunnelInfoCtx, TunnelCtx
-, SwitchCtx, LWECtx -- these are internal, but exported for better docs
+, AbsorbGCtx, SwitchCtx, LWECtx -- these are internal, but exported for better docs
 ) where
 
 import qualified Algebra.Additive as Additive (C)

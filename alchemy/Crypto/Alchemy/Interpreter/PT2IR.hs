@@ -1,58 +1,52 @@
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RebindableSyntax    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE TypeInType          #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE ViewPatterns        #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE InstanceSigs          #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RebindableSyntax      #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 module Crypto.Alchemy.Interpreter.PT2IR where
 
+import Control.Monad.Random
+
+import Crypto.Alchemy.Common
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.IR
 import Crypto.Alchemy.Language.PT
 import Crypto.Lol hiding (Pos(..), type (*))
-import qualified Crypto.Lol as Lol (Pos(..))
+import qualified Crypto.Lol as Lol (Pos(..), type (*))
 import Crypto.Lol.Applications.SymmSHE
 import Crypto.Lol.Types
 
+
+import Crypto.Lol.Types.ZPP
+import Crypto.Lol.Cyclotomic.Tensor
+
 import Data.Constraint
+import Data.Dynamic
 import Data.Kind
-import Data.Singletons.Prelude.List
-import Data.Singletons.Prelude.Maybe
 import Data.Type.Natural (Nat(..))
 
--- injective type families are worthless: see
--- http://stackoverflow.com/questions/42602796/injective-type-families-with-gadts
--- https://ghc.haskell.org/trac/ghc/ticket/10833
---type family Mul2 (x :: k) :: k
---type instance Mul2 (ZqBasic q i) = ZqBasic (Mul2 q) i
---type instance Mul2 ('PP '(Prime2, e)) = 'PP '(Prime2, 'Lol.S e)
-
--- used to simulate injective type families
-type family Div2 (x :: k) :: k
-
-type family Two (x :: k)
-
 type ZpDict e = (Ring (Z2E e))
-
-
--- concrete Z integer representation
-type Z = Int64
-
--- a concrete Z_2^e data type
-type Z2E e = ZqBasic ('PP '(Prime2, e)) Z
 
 -- zq' is current modulus, zq is next modulus
 type ZqDict t e zq' zq zqs =
    -- constraints to get constraints on P2CTerm for zq
   (Reduce Z zq, CElt t zq, Encode (Z2E e) zq,
    -- constraints for rescaleCT
-   RescaleCyc (Cyc t) zq' zq)
+   RescaleCyc (Cyc t) zq' zq, Reduce (DecompOf zq) zq, CElt t (DecompOf zq),
+   NFElt zq, Random zq)
 
+-- tensor, zp-exponent-of-two, zqs list, and depth of computation
 data D t e zqs d where
   DZZ :: D t 'Lol.O zqs 'Z
 
@@ -77,14 +71,6 @@ zqDict :: (zq' ~ (zqs !! ('S d)), zq ~ (zqs !! d))
 zqDict (DZS d) = (Dict, d)
 zqDict (DSS _ d) = (Dict, d)
 
--- singletons exports (:!!), which takes a TypeLit index; we need a TypeNatural index
-type family (xs :: [k1]) !! (d :: Nat) :: k1 where
-  (x ': xs) !! 'Z = x
-  (x ': xs) !! 'S s = xs !! s
-
--- a type-lvel map from PT index to CT index
-type M2M' m m'map = FromJust (Lookup m m'map)
-
 -- If you get compile errors about kinds, make sure that ALL arguments have
 -- kind sigs! https://ghc.haskell.org/trac/ghc/ticket/13365
 -- | Plaintext to ciphertext compiler.
@@ -97,46 +83,119 @@ data PT2IR :: (* -> *)
            -> [*]
            -> forall k . k
            -> *
-           -> *
-  where
-    P2ITerm  :: (m' ~ M2M' m m'map,
-                 ct ~ CT m zp (Cyc t m' zq),
-                 zp ~ Z2E e,
-                 zq ~ (zqs !! d),
-                 m `Divides` m', Lift' zp, Reduce Z zq,
-                 CElt t zq, Eq zp, Encode zp zq,
-                 --additional constraints for AddPublicCtx t m m' zp zq
-                 CElt t zp, CElt t (LiftOf zp))
-             => D t e zqs d -> ctexpr ct -> PT2IR ctexpr m'map zqs d (Cyc t m zp)
+           -> * where
+  P2ITerm  :: (m' ~ Lookup m m'map, ct ~ CT m zp (Cyc t m' zq),
+               zp ~ Z2E k, zq ~ (zqs !! d), PosC k, -- p = 2^k
+               m `Divides` m', Lift' zp, Reduce Z zq,
+               CElt t zq, Eq zp, Encode zp zq,
+               --additional constraints for AddPublicCtx t m m' zp zq
+               CElt t zp, CElt t (LiftOf zp),
+               --additional constraints for calling tunnelIR
+               CElt t (DecompOf zq), Ring zq, Random zq, NFElt zq,
+               Reduce (DecompOf zq) zq,
+               ToSDCtx t m' zp zq, AbsorbGCtx t m' zp zq)
+           => D t k zqs d -> MDiv m'map -> irexpr ct -> PT2IR irexpr m'map zqs d (Cyc t m zp)
 
-    P2ILam :: (PT2IR ctexpr m'map zqs da a -> PT2IR ctexpr m'map zqs db b)
-           -> PT2IR ctexpr m'map zqs '(da,db) (a -> b)
+  P2ILam :: (PT2IR irexpr m'map zqs da a -> PT2IR irexpr m'map zqs db b)
+         -> PT2IR irexpr m'map zqs '(da,db) (a -> b)
+
+instance (SymIR irexpr) => SymPT (PT2IR irexpr m'map zqs) where
+
+  (P2ITerm d m a) +# (P2ITerm _ _ b) = P2ITerm d m $ a + b
+                                   \\ witness entailRingSymIR a
+
+  neg (P2ITerm d m a) = P2ITerm d m $ -a \\ witness entailRingSymIR a
+
+  (P2ITerm (zqDict -> (Dict, d)) m a) *# (P2ITerm _ _ b) = P2ITerm d m $
+    rescaleIR $ keySwitchQuadIR $ a * b \\ witness entailRingSymIR a
+
+  addPublicPT a (P2ITerm d m b) = P2ITerm d m $ addPublicIR a b
+  mulPublicPT a (P2ITerm d m b) = P2ITerm d m $ mulPublicIR a b
+
+  tunnelPT :: forall e r s t zp d .
+    (e ~ FGCD r s, e `Divides` r, e `Divides` s, CElt t zp, ZPP zp,
+     TElt t (ZpOf zp), Typeable s)
+    => Linear t zp e r s
+       -> PT2IR irexpr m'map zqs d (Cyc t r zp)
+       -> PT2IR irexpr m'map zqs d (Cyc t s zp)
+  tunnelPT f (P2ITerm d m a) =
+    -- EAC: TODO Need to modSwitch up before tunneling, and down after.
+    case mdivLookup m (Proxy::Proxy s) of
+      Dict -> P2ITerm d m $ tunnelIR f a
+
+m' ~ (FLCM m (e*m'/m))
+{-
+-- EAC: copy-pasted from PTTunnel instance in Crypto.Lol.Applications.HomomPRF
+    -- we should find a real home for this code...
+    let crts = proxy crtSet (Proxy::Proxy e)
+        r = proxy totientFact (Proxy::Proxy r)
+        e = proxy totientFact (Proxy::Proxy e)
+        dim = r `div` e
+        -- only take as many crts as we need
+        -- otherwise linearDec fails
+        linf = linearDec (take dim crts) :: Linear t zp e r s
+-}
+
+instance LambdaD (PT2IR irexpr m'map zqs) where
+  lamD = P2ILam
+  appD (P2ILam f) = f
+
+type MDiv map = MDiv' map (Length map)
+
+data MDiv' m'map d where
+  MNil :: MDiv' '[] 'Z
+  MCons :: (m `Divides` m',
+            e ~ FGCD m e', e' ~ (e Lol.* (m' / m)),
+            m' ~ FLCM m e', e' `Divides` m',
+
+
+
+            Typeable m, Typeable m',
+            '(m,m') ~ (m'map !! d), m' ~ (Lookup m m'map))
+        => Proxy m -> MDiv' m'map d -> MDiv' m'map ('S d)
+
+mdivLookup :: forall m1 m'map d m' .
+  (Typeable m1, Fact m1, m' ~ Lookup m1 m'map)
+  => MDiv' m'map d -> Proxy m1
+     -> Dict (m1 `Divides` m',
+              Typeable m')
+mdivLookup MNil _ = error "This can never happen"
+mdivLookup (MCons (_::Proxy m2) mds) pm = case eqT @m1 @m2 of
+  Nothing -> mdivLookup mds pm
+  (Just Refl) -> Dict
+
+{-
+-- EAC: Alternate implementation of MDiv and mdivLookup.
+-- This version has a nicer GADT (fewer constraints on MCons and no "index" parameter)
+-- but it requries unsafeCoerce.
+-- Note that *both* implementations have a hole.
+data MDiv (map :: [(Factored,Factored)]) where
+  MNil :: MDiv '[]
+  MCons :: (m `Divides` m', Typeable m) => MDiv rest -> MDiv ( '(m,m') ': rest)
+
+mdivLookup :: forall s map . (Typeable s) => MDiv map -> Proxy s -> Dict (s `Divides` (Lookup s map))
+mdivLookup MNil _ = error "This can never happen"
+mdivLookup a@(MCons rest) ps =
+  -- https://ghc.haskell.org/trac/ghc/ticket/13365
+  case a of
+    (a :: MDiv ( '(m,m') ': rest)) ->
+      case eqT @s @m of
+        (Just Refl) -> Dict
+        Nothing -> unsafeCoerceLookup @s @'(m,m') @rest $ mdivLookup rest ps
+
+unsafeCoerceLookup :: forall s a rest .
+  Dict (s `Divides` (Lookup s rest)) -> Dict (s `Divides` (Lookup s (a ': rest)))
+unsafeCoerceLookup = unsafeCoerce
+-}
 
 -- CJP: want a conversion that works for both Term and Lam.  How to
 -- write the type signature for it?
 {-
 -- | Convert from 'SymPT' to 'SymCT' (using 'PT2CT').
 pt2CT :: (m `Divides` m', ct ~ CT m zp (Cyc t m' zq), Ring ct)
-      => PT2CT ctexpr d (Cyc t m zp)
+      => PT2CT irexpr d (Cyc t m zp)
       -> proxy m'
       -> Zqs t zp d zq
-      -> ctexpr (CT m zp (Cyc t m' zq))
+      -> irexpr (CT m zp (Cyc t m' zq))
 pt2CT (P2ITerm f) = f
 -}
-
-instance (SymIR ctexpr) => SymPT (PT2IR ctexpr m'map zqs) where
-
-  (P2ITerm d a) +# (P2ITerm _ b) = P2ITerm d $ a + b
-                                   \\ witness entailRingSymIR a
-
-  neg (P2ITerm d a) = P2ITerm d $ -a \\ witness entailRingSymIR a
-
-  (P2ITerm (zqDict -> (Dict, d)) a) *# (P2ITerm _ b) =
-    P2ITerm d $ rescaleIR (a * b \\ witness entailRingSymIR a)
-
-  addPublicPT a (P2ITerm d b) = P2ITerm d $ addPublicIR a b
-  mulPublicPT a (P2ITerm d b) = P2ITerm d $ mulPublicIR a b
-
-instance LambdaD (PT2IR ctexpr m'map zqs) where
-  lamD = P2ILam
-  appD (P2ILam f) = f

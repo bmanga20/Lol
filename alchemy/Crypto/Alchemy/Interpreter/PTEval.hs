@@ -1,7 +1,6 @@
 {-# LANGUAGE ExplicitNamespaces  #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTSyntax          #-}
-{-# LANGUAGE InstanceSigs        #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -34,18 +33,4 @@ instance SymPT ID where
   addPublicPT a b = ID $ a + unID b
   mulPublicPT a b = ID $ a * unID b
 
-  -- generates the tunnel functions at evaluation time
-  tunnelPT :: forall e r s d t zp . (e ~ FGCD r s, e `Divides` r, e `Divides` s,
-                                   CElt t zp, ZPP zp, TElt t (ZpOf zp))
-           => ID d (Cyc t r zp) -> ID d (Cyc t s zp)
-  tunnelPT =
-    -- EAC: copy-pasted from PTTunnel instance in Crypto.Lol.Applications.HomomPRF
-    -- we should find a real home for this code...
-    let crts = proxy crtSet (Proxy::Proxy e)
-        r = proxy totientFact (Proxy::Proxy r)
-        e = proxy totientFact (Proxy::Proxy e)
-        dim = r `div` e
-        -- only take as many crts as we need
-        -- otherwise linearDec fails
-        linf = linearDec (take dim crts) :: Linear t zp e r s
-    in ID . evalLin linf . unID
+  tunnelPT linf = ID . evalLin linf . unID
