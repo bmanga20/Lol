@@ -34,6 +34,7 @@ library
                        Crypto.Alchemy.Interpreter.PT2IR
                        Crypto.Alchemy.Interpreter.IR2CT
                        Crypto.Alchemy.Interpreter.ShowPT
+                       Crypto.Alchemy.Interpreter.ShowIR
                        Crypto.Alchemy.Language.CT
                        Crypto.Alchemy.Language.IR
                        Crypto.Alchemy.Language.Lam

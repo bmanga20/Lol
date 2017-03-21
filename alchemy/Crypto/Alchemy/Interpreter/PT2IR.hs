@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE RebindableSyntax     #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -25,22 +27,22 @@ import Data.Type.Natural (Nat(..))
 
 -- The `forall` is right before the polymorphic argument in order to keep the
 -- type polymorphic after partial application. (Otherwise the LamD instance won't compile)
--- This is likely a bug.
+-- See https://ghc.haskell.org/trac/ghc/ticket/13399.
 data PT2IR :: (* -> *)
            -> [(Factored,Factored)]
            -> [*]
            -> forall k . k
            -> *
            -> * where
-  P2ITerm  :: (m' ~ Lookup m m'map, ct ~ CT m zp (Cyc t m' zq), zq ~ (zqs !! d))
-           => irexpr ct -> PT2IR irexpr m'map zqs d (Cyc t m zp)
+  P2ITerm  :: irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d)))
+              -> PT2IR irexpr m'map zqs d (Cyc t m zp)
 
-  P2ILam :: (PT2IR irexpr m'map zqs da a -> PT2IR irexpr m'map zqs db b)
+  P2ILam :: (a ~ Cyc t m zp) => (PT2IR irexpr m'map zqs da a -> PT2IR irexpr m'map zqs db b)
          -> PT2IR irexpr m'map zqs '(da,db) (a -> b)
 
 instance (SymIR irexpr) => SymPT (PT2IR irexpr m'map zqs) where
 
-  type LitCtxPT      (PT2IR irexpr m'map zqs) d t m     zp = ()
+  type LitCtxPT      (PT2IR irexpr m'map zqs) d t m     zp = (LitCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
   type AddPubCtxPT   (PT2IR irexpr m'map zqs) d t m     zp = (AddPubCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
   type MulPubCtxPT   (PT2IR irexpr m'map zqs) d t m     zp = (MulPubCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
   type AdditiveCtxPT (PT2IR irexpr m'map zqs) d t m     zp = (Additive (irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d)))))
@@ -68,14 +70,31 @@ instance LambdaD (PT2IR irexpr m'map zqs) where
   lamD = P2ILam
   appD (P2ILam f) = f
 
--- CJP: want a conversion that works for both Term and Lam.  How to
--- write the type signature for it?
+class CompilePT2IR irexpr a where
+  type IRType a
+
+  compilePT2IR :: a -> irexpr (IRType a)
+
+instance CompilePT2IR irexpr (PT2IR irexpr m'map zqs (d :: Nat) (Cyc t m zp)) where
+  type IRType (PT2IR irexpr m'map zqs d (Cyc t m zp)) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
+  compilePT2IR (P2ITerm a) = a
+
+instance (CompilePT2IR irexpr (PT2IR irexpr m'map zqs db b), Lambda irexpr)
+  => CompilePT2IR irexpr (PT2IR irexpr m'map zqs '( (da :: Nat), db) (Cyc t ma zpa -> b)) where
+  type IRType (PT2IR irexpr m'map zqs '(da,db) (Cyc t ma zpa -> b)) =
+    (IRType (PT2IR irexpr m'map zqs da (Cyc t ma zpa)) -> IRType (PT2IR irexpr m'map zqs db b))
+  compilePT2IR (P2ILam f) = lam $ \irterm -> compilePT2IR $ f (P2ITerm irterm)
+
 {-
--- | Convert from 'SymPT' to 'SymCT' (using 'PT2CT').
-pt2CT :: (m `Divides` m', ct ~ CT m zp (Cyc t m' zq), Ring ct)
-      => PT2CT irexpr d (Cyc t m zp)
-      -> proxy m'
-      -> Zqs t zp d zq
-      -> irexpr (CT m zp (Cyc t m' zq))
-pt2CT (P2ITerm f) = f
+-- EAC: my attempt to write compilePT2IR without a class.
+-- It fails because we can only compile lambdas where the first argument is a Cyc.
+
+type family IRType2 a where
+  IRType2 (PT2IR irexpr m'map zqs d (Cyc t m zp)) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
+  IRType2 (PT2IR irexpr m'map zqs '(da,db) (Cyc t ma zpa -> b)) =
+    (IRType2 (PT2IR irexpr m'map zqs da (Cyc t ma zpa)) -> IRType2 (PT2IR irexpr m'map zqs db b))
+
+compileMe :: PT2IR irexpr m'map zqs d a -> irexpr (IRType2 (PT2IR irexpr m'map zqs d a))
+compileMe (P2ITerm a) = a
+compileMe (P2ILam f) = lam $ \irterm -> compilePT2IR $ f (P2ITerm irterm)
 -}

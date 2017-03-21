@@ -14,11 +14,15 @@ import Data.Constraint
 
 class SymIR expr where
 
+  type LitCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type RescaleCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq' zq :: Constraint
   type AddPubCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type MulPubCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type KeySwitchCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type TunnelCtxIR expr (t :: Factored -> * -> *) (e :: Factored) (r :: Factored) (s :: Factored) (r' :: Factored) (s' :: Factored) zp zq :: Constraint
+
+  litIR :: (LitCtxIR expr t m m' zp zq, ct ~ CT m zp (Cyc t m' zq))
+        => Cyc t m zp -> expr (CT m zp (Cyc t m' zq))
 
   rescaleIR :: (RescaleCtxIR expr t m m' zp zq' zq)
             => expr (CT m zp (Cyc t m' zq')) -> expr (CT m zp (Cyc t m' zq))

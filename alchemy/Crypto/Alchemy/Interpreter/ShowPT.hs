@@ -26,9 +26,9 @@ instance SymPT ShowPT where
   type TunnelCtxPT   ShowPT d t e r s zp = ()
 
   litPT a = SPT 0 $ show a
-  (SPT _ a) +# (SPT _ b) = SPT 0 $ "( " ++ a ++ " + " ++ b ++ " )"
+  (SPT _ a) +# (SPT _ b) = SPT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
   neg (SPT _ a) = SPT 0 $ "neg " ++ "( " ++ a ++ " )"
-  (SPT _ a) *# (SPT _ b) = SPT 0 $ "( " ++ a ++ " * " ++ b ++ " )"
-  addPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " + " ++ b ++ " )"
-  mulPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " * " ++ b ++ " )"
-  tunnelPT _ (SPT _ a) = SPT 0 $ "tunnel <FUNC> " ++ a ++ " )"
+  (SPT _ a) *# (SPT _ b)  = SPT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+  addPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b ++ " )"
+  mulPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+  tunnelPT _ (SPT _ a) = SPT 0 $ "tunnel <FUNC> " ++ "( " ++ a ++ " )"
