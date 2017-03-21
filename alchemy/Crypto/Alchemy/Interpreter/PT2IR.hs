@@ -40,6 +40,7 @@ data PT2IR :: (* -> *)
 
 instance (SymIR irexpr) => SymPT (PT2IR irexpr m'map zqs) where
 
+  type LitCtxPT      (PT2IR irexpr m'map zqs) d t m     zp = ()
   type AddPubCtxPT   (PT2IR irexpr m'map zqs) d t m     zp = (AddPubCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
   type MulPubCtxPT   (PT2IR irexpr m'map zqs) d t m     zp = (MulPubCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
   type AdditiveCtxPT (PT2IR irexpr m'map zqs) d t m     zp = (Additive (irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d)))))

@@ -2,10 +2,10 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTSyntax          #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -27,12 +27,14 @@ instance LambdaD ID where
 -- | Metacircular plaintext symantics.
 instance SymPT ID where
 
+  type LitCtxPT      ID d t m zp     = ()
   type AddPubCtxPT   ID d t m zp     = (Additive (Cyc t m zp))
   type MulPubCtxPT   ID d t m zp     = (Ring (Cyc t m zp))
   type AdditiveCtxPT ID d t m zp     = (Additive (Cyc t m zp))
   type RingCtxPT     ID d t m zp     = (Ring (Cyc t m zp))
   type TunnelCtxPT   ID d t e r s zp = (e `Divides` r, e `Divides` s, CElt t zp)
 
+  litPT = ID
   a +# b = ID $ unID a + unID b
   neg a = ID $ negate $ unID a
   a *# b = ID $ unID a * unID b
