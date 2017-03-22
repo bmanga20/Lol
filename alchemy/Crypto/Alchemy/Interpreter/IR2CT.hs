@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs                   #-}
 {-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE LambdaCase              #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE NoImplicitPrelude       #-}
 {-# LANGUAGE PartialTypeSignatures   #-}
 {-# LANGUAGE RankNTypes              #-}
@@ -26,6 +27,7 @@ import Control.Monad.State.Strict
 
 import Crypto.Alchemy.Common
 import Crypto.Alchemy.Language.IR
+import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.CT
 import Crypto.Lol hiding (type (*), type S)
 import qualified Crypto.Lol as Lol (type (*))
@@ -35,14 +37,35 @@ import Data.Dynamic
 import Data.Kind
 import Data.Maybe (mapMaybe)
 
+type IR2CT' ctexpr zq'map ksgad v rnd = IR2CTMon (IR2CT ctexpr zq'map ksgad v) (ReaderT v (StateT ([Dynamic],[Dynamic]) rnd))
+
+
 data IR2CT :: (* -> *) -> [(*,*)] -> * -> * -> * -> * where
   I2CTerm  :: (ct ~ CT m zp (Cyc t m' zq))
     => {unI2CTerm :: ctexpr ct} -> IR2CT ctexpr zq'map ksgad v ct
 
-  I2CLam :: (IR2CT ctexpr zq'map ksgad v a -> IR2CT ctexpr zq'map ksgad v b)
+  I2CLam :: {unI2CLam :: IR2CT ctexpr zq'map ksgad v a -> IR2CT ctexpr zq'map ksgad v b}
          -> IR2CT ctexpr zq'map ksgad v (a -> b)
 
 newtype IR2CTMon (ir2ct :: (* -> *)) (mon :: * -> *) (a :: *) = IR2CTMon {unwrap :: mon (ir2ct a)}
+
+instance (Applicative mon) => Compile (IR2CTMon ctexpr mon) (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon (CT m zp (Cyc t m' zq))) where
+  type CompiledType (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon (CT m zp (Cyc t m' zq))) = CT m zp (Cyc t m' zq)
+  compile = IR2CTMon . (unI2CTerm <$>) . unwrap
+
+instance (Monad mon, Compile (IR2CTMon ctexpr mon) (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon b), Lambda (IR2CTMon ctexpr mon))
+  => Compile (IR2CTMon ctexpr mon) (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon (CT m zp (Cyc t m' zq) -> b)) where
+  type CompiledType (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon (CT m zp (Cyc t m' zq) -> b)) =
+    (CompiledType (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon (CT m zp (Cyc t m' zq)))
+     -> CompiledType (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon b))
+  compile f = lam $ \(IR2CTMon term) -> compile $ IR2CTMon $ (unI2CLam <$> unwrap f) <*> (I2CTerm <$> term)
+
+compileIR2CT :: forall rnd mon v ctexpr zq'map ksgad a .
+  (MonadRandom rnd, mon ~ ReaderT v (StateT ([Dynamic],[Dynamic]) rnd),
+   Compile (IR2CTMon ctexpr mon) (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon a))
+  => v -> IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon a -> rnd (ctexpr (CompiledType (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon a)))
+-- EAC: Not sure why I need the type sig on `pure a`
+compileIR2CT v a = flip evalStateT ([],[]) $ flip runReaderT v $ unwrap $ compile a -- $ IR2CTMon (pure a :: mon _)
 
 instance (SymCT ctexpr, MonadReader v mon, ToRational v, NFData v, MonadState ([Dynamic],[Dynamic]) mon, MonadRandom mon)
   => SymIR (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon) where
@@ -59,7 +82,6 @@ instance (SymCT ctexpr, MonadReader v mon, ToRational v, NFData v, MonadState ([
      GenSKCtx t s' (LiftOf zp) v, Typeable (Cyc t s' (LiftOf zp)),
      GenTunnelInfoCtx t e r s (e Lol.* (r' / r)) r' s' (LiftOf zp) zp zq ksgad,
      TunnelCtxCT ctexpr ksgad t e r s (e Lol.* (r' / r)) r' s' zp zq)
-
 
   rescaleIR = IR2CTMon . (I2CTerm <$> rescaleCT <$> unI2CTerm <$>) . unwrap
 
@@ -79,7 +101,14 @@ instance (SymCT ctexpr, MonadReader v mon, ToRational v, NFData v, MonadState ([
     (sk :: SK (Cyc t r' (LiftOf zp))) <- getKey
     thint :: TunnelInfo ksgad t e r s (e Lol.* (r' / r)) r' _ zp zq <- tunnelInfo linf skout sk
     return $ I2CTerm $ tunnelCT thint a
+{-
+instance Lambda (IR2CTMon (IR2CT ctexpr zq'map ksgad v) mon) where
 
+  --lam :: (expr a -> expr b) -> expr (a -> b)
+
+  lam f = IR2CTMon $ doreturn $ I2CLam $ \a -> unwrap $ f (IR2CTMon $ return a)
+  --app (I2CLam f) = f
+-}
 -- retrieve the scaled variance parameter from the Reader
 getSvar :: (MonadReader v mon) => mon v
 getSvar = ask

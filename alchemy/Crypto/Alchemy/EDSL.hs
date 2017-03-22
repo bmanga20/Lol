@@ -8,6 +8,7 @@
 
 module Crypto.Alchemy.EDSL where
 
+import Crypto.Alchemy.Common
 import Crypto.Alchemy.Language.CT ()
 import Crypto.Alchemy.Language.IR ()
 import Crypto.Alchemy.Language.Lam
@@ -15,9 +16,10 @@ import Crypto.Alchemy.Language.PT
 import Crypto.Alchemy.Interpreter.CTEval ()
 import Crypto.Alchemy.Interpreter.PTEval
 import Crypto.Alchemy.Interpreter.PT2IR
-import Crypto.Alchemy.Interpreter.IR2CT ()
+import Crypto.Alchemy.Interpreter.IR2CT
 import Crypto.Alchemy.Interpreter.ShowPT
 import Crypto.Alchemy.Interpreter.ShowIR
+import Crypto.Alchemy.Interpreter.ShowCT
 
 import Crypto.Lol hiding (Pos(..), type (*))
 import Crypto.Lol.Cyclotomic.Tensor.CPP
@@ -61,4 +63,14 @@ main = do
   -- apply the PT function to arguments and evaluate the function
   putStrLn $ show $ unID  $ pt3 @(Cyc CT F4 Int64) 7 11
   -- compile the un-applied function to IR, then print it out
-  putStrLn $ unSIR $ compilePT2IR $ pt2 @(Cyc CT F4 (Zq 7)) @'Z @(PT2IR ShowIR '[ '(F4, F8)] '[ Zq 7, (Zq 11, Zq 7) ])
+  putStrLn $ unSIR $ compile $ pt2 @(Cyc CT F4 (Zq 7)) @'Z @(PT2IR ShowIR '[ '(F4, F8)] '[ Zq 7, (Zq 11, Zq 7) ])
+
+  -- compile the un-applied function to CT, then print it out
+  x <- compileIR2CT 1.0 $ compile $
+        pt2 @(Cyc CT F4 (Zq 7))
+            @'Z
+            @(PT2IR
+               (IR2CT' ShowCT '[ '(Zq 7, (Zq 11, Zq 7)), '((Zq 11, Zq 7), (Zq 13, (Zq 11, Zq 7))) ] TrivGad Double IO)
+               '[ '(F4, F8)]
+               '[ Zq 7, (Zq 11, Zq 7) ])
+  putStrLn $ unSCT x

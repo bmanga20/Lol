@@ -37,7 +37,7 @@ data PT2IR :: (* -> *)
   P2ITerm  :: irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d)))
               -> PT2IR irexpr m'map zqs d (Cyc t m zp)
 
-  P2ILam :: (a ~ Cyc t m zp) => (PT2IR irexpr m'map zqs da a -> PT2IR irexpr m'map zqs db b)
+  P2ILam :: (PT2IR irexpr m'map zqs da a -> PT2IR irexpr m'map zqs db b)
          -> PT2IR irexpr m'map zqs '(da,db) (a -> b)
 
 instance (SymIR irexpr) => SymPT (PT2IR irexpr m'map zqs) where
@@ -70,20 +70,15 @@ instance LambdaD (PT2IR irexpr m'map zqs) where
   lamD = P2ILam
   appD (P2ILam f) = f
 
-class CompilePT2IR irexpr a where
-  type IRType a
+instance Compile irexpr (PT2IR irexpr m'map zqs (d :: Nat) (Cyc t m zp)) where
+  type CompiledType (PT2IR irexpr m'map zqs d (Cyc t m zp)) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
+  compile (P2ITerm a) = a
 
-  compilePT2IR :: a -> irexpr (IRType a)
-
-instance CompilePT2IR irexpr (PT2IR irexpr m'map zqs (d :: Nat) (Cyc t m zp)) where
-  type IRType (PT2IR irexpr m'map zqs d (Cyc t m zp)) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
-  compilePT2IR (P2ITerm a) = a
-
-instance (CompilePT2IR irexpr (PT2IR irexpr m'map zqs db b), Lambda irexpr)
-  => CompilePT2IR irexpr (PT2IR irexpr m'map zqs '( (da :: Nat), db) (Cyc t ma zpa -> b)) where
-  type IRType (PT2IR irexpr m'map zqs '(da,db) (Cyc t ma zpa -> b)) =
-    (IRType (PT2IR irexpr m'map zqs da (Cyc t ma zpa)) -> IRType (PT2IR irexpr m'map zqs db b))
-  compilePT2IR (P2ILam f) = lam $ \irterm -> compilePT2IR $ f (P2ITerm irterm)
+instance (Compile irexpr (PT2IR irexpr m'map zqs db b), Lambda irexpr)
+  => Compile irexpr (PT2IR irexpr m'map zqs '( (da :: Nat), db) (Cyc t ma zpa -> b)) where
+  type CompiledType (PT2IR irexpr m'map zqs '(da,db) (Cyc t ma zpa -> b)) =
+    (CompiledType (PT2IR irexpr m'map zqs da (Cyc t ma zpa)) -> CompiledType (PT2IR irexpr m'map zqs db b))
+  compile (P2ILam f) = lam $ compile . f . P2ITerm
 
 {-
 -- EAC: my attempt to write compilePT2IR without a class.
