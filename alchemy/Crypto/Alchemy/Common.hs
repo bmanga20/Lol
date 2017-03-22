@@ -33,7 +33,7 @@ type Z = Int64
 -- a concrete Z_2^e data type
 type Z2E e = ZqBasic ('PP '(Prime2, e)) Z
 
-class Compile mon expr a where
-  type CompiledType a
+class Compile inexpr outexpr a where
+  type CompiledType inexpr a
 
-  compile :: a -> mon (expr (CompiledType a))
+  compile :: inexpr a -> outexpr (CompiledType inexpr a)

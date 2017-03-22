@@ -4,6 +4,7 @@
 module Crypto.Alchemy.Interpreter.ShowPT where
 
 import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.PT
 import Crypto.Lol (Cyc)
 
@@ -18,17 +19,19 @@ instance LambdaD ShowPT where
 
 instance SymPT ShowPT where
 
-  type LitCtxPT      ShowPT d t m zp     = (Show (Cyc t m zp))
   type AddPubCtxPT   ShowPT d t m zp     = (Show (Cyc t m zp))
   type MulPubCtxPT   ShowPT d t m zp     = (Show (Cyc t m zp))
   type AdditiveCtxPT ShowPT d t m zp     = ()
   type RingCtxPT     ShowPT d t m zp     = ()
   type TunnelCtxPT   ShowPT d t e r s zp = ()
 
-  litPT a = SPT 0 $ show a
   (SPT _ a) +# (SPT _ b) = SPT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
   neg (SPT _ a) = SPT 0 $ "neg " ++ "( " ++ a ++ " )"
   (SPT _ a) *# (SPT _ b)  = SPT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
   addPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b ++ " )"
   mulPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b ++ " )"
   tunnelPT _ (SPT _ a) = SPT 0 $ "tunnel <FUNC> " ++ "( " ++ a ++ " )"
+
+instance Lit (ShowPT d) where
+  type LitCtx (ShowPT d) a = (Show a)
+  lit a = SPT 0 $ show a

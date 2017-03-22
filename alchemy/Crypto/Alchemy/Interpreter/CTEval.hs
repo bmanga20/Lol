@@ -8,6 +8,7 @@ import Algebra.Additive as Additive (C)
 import Algebra.Ring as Ring (C)
 
 import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.CT
 import Crypto.Lol
 import Crypto.Lol.Applications.SymmSHE as SHE
@@ -35,3 +36,8 @@ instance SymCT I where
   mulPublicCT a = I . mulPublic a . unI
   keySwitchQuadCT hint = I . keySwitchQuadCirc hint . unI
   tunnelCT info = I . SHE.tunnelCT info . unI
+
+instance Lit I where
+  type LitCtx I a = ()
+  lit = I
+

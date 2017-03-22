@@ -8,6 +8,7 @@ import Algebra.Additive as Additive (C(..))
 import Algebra.Ring as Ring (C)
 
 import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.CT
 import Crypto.Lol
 
@@ -42,3 +43,7 @@ instance Additive.C (ShowCT a) where
 instance Ring.C (ShowCT a) where
   one = SCT 0 "1"
   (SCT _ a) * (SCT _ b)  = SCT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+
+instance Lit ShowCT where
+  type LitCtx ShowCT a = (Show a)
+  lit a = SCT 0 $ show a

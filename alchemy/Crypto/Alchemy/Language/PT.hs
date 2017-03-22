@@ -17,14 +17,11 @@ import Data.Kind
 
 class SymPT (expr :: forall k . k -> * -> *) where
 
-  type LitCtxPT      expr (d :: k) (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
   type AddPubCtxPT   expr (d :: k) (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
   type MulPubCtxPT   expr (d :: k) (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
   type AdditiveCtxPT expr (d :: k) (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
   type RingCtxPT     expr (d :: k) (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
   type TunnelCtxPT   expr (d :: k) (t :: Factored -> * -> *) (e :: Factored) (r :: Factored) (s :: Factored) zp :: Constraint
-
-  litPT :: (rp ~ Cyc t m zp, LitCtxPT expr d t m zp) => rp -> expr d rp
 
   addPublicPT :: (rp ~ Cyc t m zp, AddPubCtxPT expr d t m zp) => rp -> expr d rp -> expr d rp
   mulPublicPT :: (rp ~ Cyc t m zp, MulPubCtxPT expr d t m zp) => rp -> expr d rp -> expr d rp

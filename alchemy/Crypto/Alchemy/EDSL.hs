@@ -12,14 +12,15 @@ import Crypto.Alchemy.Common
 import Crypto.Alchemy.Language.CT ()
 import Crypto.Alchemy.Language.IR ()
 import Crypto.Alchemy.Language.Lam
+import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.PT
 import Crypto.Alchemy.Interpreter.CTEval ()
 import Crypto.Alchemy.Interpreter.PTEval
 import Crypto.Alchemy.Interpreter.PT2IR
-import Crypto.Alchemy.Interpreter.IR2CT
+--import Crypto.Alchemy.Interpreter.IR2CT
 import Crypto.Alchemy.Interpreter.ShowPT
 import Crypto.Alchemy.Interpreter.ShowIR
-import Crypto.Alchemy.Interpreter.ShowCT
+import Crypto.Alchemy.Interpreter.ShowCT ()
 
 import Crypto.Lol hiding (Pos(..), type (*))
 import Crypto.Lol.Cyclotomic.Tensor.CPP
@@ -36,23 +37,27 @@ pt1 :: forall (ptexpr :: forall k . k -> * -> *) a t m zp d .
      => ptexpr ('S d) a -> ptexpr ('S d) a -> ptexpr d a
 pt1 a b = addPublicPT 2 $ a *# (a +# b)
 
-pt2 :: forall a d (ptexpr :: forall k . k -> * -> *) t m zp . (SymPT ptexpr, LambdaD ptexpr, a ~ Cyc t m zp,
+pt2 :: forall a d (ptexpr :: forall k . k -> * -> *) t m zp .
+  (SymPT ptexpr, LambdaD ptexpr, a ~ Cyc t m zp,
         AddPubCtxPT ptexpr d t m zp,
         AdditiveCtxPT ptexpr ('S d) t m zp,
         RingCtxPT ptexpr d t m zp,
         Ring a) => ptexpr '( 'S d, '( 'S d, d)) (a -> a -> a)
 pt2 = lamD $ lamD . pt1
 
-pt3 :: forall a d (ptexpr :: forall k . k -> * -> *) t m zp . (SymPT ptexpr, LambdaD ptexpr, a ~ Cyc t m zp,
-        d ~ 'Z,
-        AddPubCtxPT ptexpr d t m zp,
-        AdditiveCtxPT ptexpr ('S d) t m zp,
-        RingCtxPT ptexpr d t m zp,
-        LitCtxPT ptexpr ('S d) t m zp,
-        Ring a) => a -> a -> ptexpr d a
-pt3 a = appD (appD pt2 $ litPT a) . litPT
+pt3 :: forall a d (ptexpr :: forall k . k -> * -> *) t m zp .
+  (SymPT ptexpr, Lit (ptexpr ('S d)), LambdaD ptexpr, a ~ Cyc t m zp,
+    d ~ 'Z,
+    AddPubCtxPT ptexpr d t m zp,
+    AdditiveCtxPT ptexpr ('S d) t m zp,
+    RingCtxPT ptexpr d t m zp,
+    LitCtx (ptexpr ('S d)) a,
+    Ring a) => a -> a -> ptexpr d a
+pt3 a = appD (appD pt2 $ lit a) . lit
 
 type Zq q = ZqBasic q Int64
+
+-- make different top-level funcs for `lit` (for ShowPT, PTEval, ...)
 
 main :: IO ()
 main = do
@@ -66,11 +71,11 @@ main = do
   putStrLn $ unSIR $ compile $ pt2 @(Cyc CT F4 (Zq 7)) @'Z @(PT2IR ShowIR '[ '(F4, F8)] '[ Zq 7, (Zq 11, Zq 7) ])
 
   -- compile the un-applied function to CT, then print it out
-  x <- compileIR2CT 1.0 $ compile $
+  {-x <- compileIR2CT 1.0 $ compile $
         pt2 @(Cyc CT F4 (Zq 7))
             @'Z
             @(PT2IR
                (IR2CT' ShowCT '[ '(Zq 7, (Zq 11, Zq 7)), '((Zq 11, Zq 7), (Zq 13, (Zq 11, Zq 7))) ] TrivGad Double IO)
                '[ '(F4, F8)]
                '[ Zq 7, (Zq 11, Zq 7) ])
-  putStrLn $ unSCT x
+  putStrLn $ unSCT x-}

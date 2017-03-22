@@ -30,6 +30,7 @@ library
   default-language:    Haskell2010
   exposed-modules:     Crypto.Alchemy.EDSL
                        Crypto.Alchemy.Common
+                       Crypto.Alchemy.Language.Lit
                        Crypto.Alchemy.Language.Lam
                        Crypto.Alchemy.Language.PT
                        Crypto.Alchemy.Interpreter.ShowPT
