@@ -11,6 +11,8 @@
 
 module Crypto.Alchemy.Interpreter.PT2IR where
 
+import Control.Monad.Identity
+
 import Crypto.Alchemy.Common
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.IR
@@ -70,15 +72,15 @@ instance LambdaD (PT2IR irexpr m'map zqs) where
   lamD = P2ILam
   appD (P2ILam f) = f
 
-instance Compile irexpr (PT2IR irexpr m'map zqs (d :: Nat) (Cyc t m zp)) where
+instance Compile Identity irexpr (PT2IR irexpr m'map zqs (d :: Nat) (Cyc t m zp)) where
   type CompiledType (PT2IR irexpr m'map zqs d (Cyc t m zp)) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
-  compile (P2ITerm a) = a
+  compile (P2ITerm a) = return a
 
-instance (Compile irexpr (PT2IR irexpr m'map zqs db b), Lambda irexpr)
-  => Compile irexpr (PT2IR irexpr m'map zqs '( (da :: Nat), db) (Cyc t ma zpa -> b)) where
+instance (Compile Identity irexpr (PT2IR irexpr m'map zqs db b), Lambda irexpr)
+  => Compile Identity irexpr (PT2IR irexpr m'map zqs '( (da :: Nat), db) (Cyc t ma zpa -> b)) where
   type CompiledType (PT2IR irexpr m'map zqs '(da,db) (Cyc t ma zpa -> b)) =
     (CompiledType (PT2IR irexpr m'map zqs da (Cyc t ma zpa)) -> CompiledType (PT2IR irexpr m'map zqs db b))
-  compile (P2ILam f) = lam $ compile . f . P2ITerm
+  compile (P2ILam f) = return $ lam $ runIdentity . compile . f . P2ITerm
 
 {-
 -- EAC: my attempt to write compilePT2IR without a class.
