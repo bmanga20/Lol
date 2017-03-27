@@ -1,6 +1,8 @@
 {-# LANGUAGE ExplicitNamespaces  #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE GADTSyntax          #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE RankNTypes          #-}
@@ -26,7 +28,7 @@ instance LambdaD ID where
   appD f a = ID $ unID f $ unID a
 
 -- | Metacircular plaintext symantics.
-instance SymPT ID where
+instance (Monad mon) => SymPT mon ID where
 
   type AddPubCtxPT   ID d t m zp     = (Additive (Cyc t m zp))
   type MulPubCtxPT   ID d t m zp     = (Ring (Cyc t m zp))
@@ -34,12 +36,12 @@ instance SymPT ID where
   type RingCtxPT     ID d t m zp     = (Ring (Cyc t m zp))
   type TunnelCtxPT   ID d t e r s zp = (e `Divides` r, e `Divides` s, CElt t zp)
 
-  a +# b = ID $ unID a + unID b
-  neg a = ID $ negate $ unID a
-  a *# b = ID $ unID a * unID b
-  addPublicPT a b = ID $ a + unID b
-  mulPublicPT a b = ID $ a * unID b
-  tunnelPT linf = ID . evalLin linf . unID
+  (+#) = return $ \a b -> ID $ unID a + unID b
+  neg = return $ \a -> ID $ negate $ unID a
+  (*#) = return$ \a b -> ID $ unID a * unID b
+  addPublicPT = return $ \a b -> ID $ a + unID b
+  mulPublicPT = return $ \a b -> ID $ a * unID b
+  tunnelPT linf = return $ ID . evalLin linf . unID
 
 instance Lit (ID d) where
   type LitCtx (ID d) a = ()

@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE InstanceSigs         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE RebindableSyntax     #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -9,7 +11,11 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
+
 module Crypto.Alchemy.Interpreter.PT2IR where
+
+import Control.Monad.Identity
 
 import Crypto.Alchemy.Common
 import Crypto.Alchemy.Language.Lam
@@ -40,7 +46,7 @@ data PT2IR :: (* -> *)
   P2ILam :: (PT2IR irexpr m'map zqs da a -> PT2IR irexpr m'map zqs db b)
          -> PT2IR irexpr m'map zqs '(da,db) (a -> b)
 
-instance (SymIR irexpr) => SymPT (PT2IR irexpr m'map zqs) where
+instance (SymIR mon irexpr, Monad mon) => SymPT mon (PT2IR irexpr m'map zqs) where
 
   type AddPubCtxPT   (PT2IR irexpr m'map zqs) d t m     zp = (AddPubCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
   type MulPubCtxPT   (PT2IR irexpr m'map zqs) d t m     zp = (MulPubCtxIR irexpr t m (Lookup m m'map) zp (zqs !! d))
@@ -51,19 +57,37 @@ instance (SymIR irexpr) => SymPT (PT2IR irexpr m'map zqs) where
      KeySwitchCtxIR irexpr t m (Lookup m m'map) zp (zqs !! ('S d)))
   type TunnelCtxPT   (PT2IR irexpr m'map zqs) d t e r s zp = (TunnelCtxIR irexpr t e r s (Lookup r m'map) (Lookup s m'map) zp (zqs !! d))
 
-  (P2ITerm a) +# (P2ITerm b) = P2ITerm $ a + b
+  (+#) = return $ \(P2ITerm a) (P2ITerm b) -> P2ITerm $ a + b
 
-  neg (P2ITerm a) = P2ITerm $ -a
+  neg = return $ \(P2ITerm a) -> P2ITerm $ -a
 
   -- EAC: should key switch before the mul, only if necessary. Current signature of *# doesn't allow this...
-  (P2ITerm a) *# (P2ITerm b) = P2ITerm $
-    rescaleIR $ keySwitchQuadIR $ a * b
+  (*#) :: forall rp t m zp expr d . (rp ~ Cyc t m zp, expr ~ PT2IR irexpr m'map zqs, RingCtxPT (PT2IR irexpr m'map zqs) d t m zp) =>
+          -- CJP: generalize input depths?
+          mon (expr ('S d) rp -> expr ('S d) rp -> expr d rp)
+  (*#) = do
+    (rescale' :: irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! ('S d)))) -> irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d)))) <- rescaleIR
+    (ksIR :: irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! ('S d)))) -> _) <- keySwitchQuadIR
+    return $ \(P2ITerm a) (P2ITerm b) -> P2ITerm $ rescale' $ ksIR $ a * b
 
-  addPublicPT a (P2ITerm b) = P2ITerm $ addPublicIR a b
-  mulPublicPT a (P2ITerm b) = P2ITerm $ mulPublicIR a b
+  addPublicPT :: forall rp t m zp (d :: Nat) . (rp ~ Cyc t m zp, AddPubCtxPT (PT2IR irexpr m'map zqs) d t m zp)
+    => mon (rp -> PT2IR irexpr m'map zqs d rp -> PT2IR irexpr m'map zqs d rp)
+  addPublicPT = do
+    (addPub :: Cyc t m zp -> irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))) -> _) <- addPublicIR
+    return $ \a (P2ITerm b) -> P2ITerm $ addPub a b
+
+  mulPublicPT :: forall rp t m zp (d :: Nat) . (rp ~ Cyc t m zp, MulPubCtxPT (PT2IR irexpr m'map zqs) d t m zp)
+    => mon (rp -> PT2IR irexpr m'map zqs d rp -> PT2IR irexpr m'map zqs d rp)
+  mulPublicPT = do
+    (mulPub :: Cyc t m zp -> irexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))) -> _) <- mulPublicIR
+    return $ \a (P2ITerm b) -> P2ITerm $ mulPub a b
 
   -- EAC: TODO Need to modSwitch up before a *sequence* of tunnels, and down after. How do we detect this?
-  tunnelPT f (P2ITerm a) = P2ITerm $ tunnelIR f a
+  tunnelPT :: forall (d :: Nat) t e r s zp . (TunnelCtxPT (PT2IR irexpr m'map zqs) d t e r s zp)
+           => Linear t zp e r s -> mon (PT2IR irexpr m'map zqs d (Cyc t r zp) -> PT2IR irexpr m'map zqs d (Cyc t s zp))
+  tunnelPT f = do
+    (tunn :: irexpr (CT r zp (Cyc t (Lookup r m'map) (zqs !! d))) -> irexpr (CT s zp (Cyc t (Lookup s m'map) (zqs !! d)))) <- tunnelIR f
+    return $ \(P2ITerm a) -> P2ITerm $ tunn a
 
 instance LambdaD (PT2IR irexpr m'map zqs) where
   lamD = P2ILam
@@ -78,17 +102,3 @@ instance (Compile (PT2IR irexpr m'map zqs db) irexpr b, Lambda irexpr)
   type CompiledType (PT2IR irexpr m'map zqs '(da,db)) (Cyc t ma zpa -> b) =
     (CompiledType (PT2IR irexpr m'map zqs da) (Cyc t ma zpa) -> CompiledType (PT2IR irexpr m'map zqs db) b)
   compile (P2ILam f) = lam $ compile . f . P2ITerm
-
-{-
--- EAC: my attempt to write compilePT2IR without a class.
--- It fails because we can only compile lambdas where the first argument is a Cyc.
-
-type family IRType2 a where
-  IRType2 (PT2IR irexpr m'map zqs d (Cyc t m zp)) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
-  IRType2 (PT2IR irexpr m'map zqs '(da,db) (Cyc t ma zpa -> b)) =
-    (IRType2 (PT2IR irexpr m'map zqs da (Cyc t ma zpa)) -> IRType2 (PT2IR irexpr m'map zqs db b))
-
-compileMe :: PT2IR irexpr m'map zqs d a -> irexpr (IRType2 (PT2IR irexpr m'map zqs d a))
-compileMe (P2ITerm a) = a
-compileMe (P2ILam f) = lam $ \irterm -> compilePT2IR $ f (P2ITerm irterm)
--}

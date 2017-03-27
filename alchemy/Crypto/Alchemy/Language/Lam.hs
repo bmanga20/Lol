@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, TypeInType  #-}
+{-# LANGUAGE MultiParamTypeClasses, RankNTypes, TypeInType  #-}
 
 module Crypto.Alchemy.Language.Lam where
 
