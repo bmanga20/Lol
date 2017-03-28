@@ -53,10 +53,10 @@ type family Lookup m map where
   Lookup r ( '(m,m') ': rest) = Lookup r rest
   Lookup a '[] = TypeError ('Text "Could not find " ':<>: 'ShowType a ':$$: 'Text " in a map Lookup.")
 
-type family F m'map zqs d a where
-  F m'map zqs d (Cyc t m zp) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
-  F m'map zqs ('L da db) (a -> b) = F m'map zqs da a -> F m'map zqs db b
-  F m'map zqs d c = TypeError ('Text "Cannot compile a plaintext expression over " ':$$: 'ShowType c)
+type family CTType m'map zqs d a where
+  CTType m'map zqs d (Cyc t m zp) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
+  CTType m'map zqs ('L da db) (a -> b) = CTType m'map zqs da a -> CTType m'map zqs db b
+  CTType m'map zqs d c = TypeError ('Text "Cannot compile a plaintext expression over " ':$$: 'ShowType c)
 
 newtype PT2CT :: [(Factored,Factored)] -- map from plaintext index to ciphertext index
            -> [*]                      -- list of ciphertext moduli, smallest first
@@ -72,15 +72,17 @@ newtype PT2CT :: [(Factored,Factored)] -- map from plaintext index to ciphertext
                                        --   n.b. This should usually be ('T 'Z) in top level code.
            -> *                        -- type contained in the expression
            -> * where
-  P2C :: {runP2C :: ctexpr (F m'map zqs d a)} -> PT2CT m'map zqs zq'map gad v ctexpr d a
+  P2C :: {runP2C :: ctexpr (CTType m'map zqs d a)} -> PT2CT m'map zqs zq'map gad v ctexpr d a
 
-p2cmap :: (ctexpr (F m'map zqs d a) -> ctexpr (F m'map zqs d' b)) -> PT2CT m'map zqs zq'map gad v ctexpr d a -> PT2CT m'map zqs zq'map gad v ctexpr d' b
+p2cmap :: (ctexpr (CTType m'map zqs d a) -> ctexpr (CTType m'map zqs d' b))
+           -> PT2CT m'map zqs zq'map gad v ctexpr d a
+           -> PT2CT m'map zqs zq'map gad v ctexpr d' b
 p2cmap f = P2C . f . runP2C
 
 -- explicit forall for type application
 compile :: forall m'map zqs zq'map gad v ctexpr d a rnd mon .
   (MonadRandom rnd, mon ~ ReaderT v (StateT ([Dynamic],[Dynamic]) rnd))
-  => v -> mon (PT2CT m'map zqs zq'map gad v ctexpr d a) -> rnd (ctexpr (F m'map zqs d a))
+  => v -> mon (PT2CT m'map zqs zq'map gad v ctexpr d a) -> rnd (ctexpr (CTType m'map zqs d a))
 compile v a = runP2C <$> (flip evalStateT ([],[]) $ flip runReaderT v a)
 
 ---- Language instances

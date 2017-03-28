@@ -31,7 +31,6 @@ import Crypto.Lol.Types
 
 import Data.Type.Natural
 
--- EAC: Annoying that we need two AddPT constraints here!
 pt1 ::
   (AddPT ptexpr, MulPT mon ptexpr, a ~ Cyc t m zp,
    AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
@@ -54,7 +53,6 @@ pt3 :: forall a d ptexpr mon t m zp .
   => a -> a -> mon (ptexpr d a)
 pt3 a b = (\f -> appD (appD f $ lit a) $ lit b) <$> pt2
 
-
 type Zq q = ZqBasic q Int64
 
 main :: IO ()
@@ -67,7 +65,7 @@ main = do
   putStrLn $ show $ unID $ runIdentity $ pt3 @(Cyc CT F4 Int64) 7 11
   -- compile the un-applied function to CT, then print it out
   x <- compile
-         @'[ '(F4, F8)]
+         @'[ '(F4, F8) ]
          @'[ Zq 7, (Zq 11, Zq 7) ]
          @'[ '(Zq 7, (Zq 11, Zq 7)), '((Zq 11, Zq 7), (Zq 13, (Zq 11, Zq 7))) ]
          @TrivGad
@@ -75,22 +73,3 @@ main = do
          1.0
          (pt2 @(Cyc CT F4 (Zq 7)) @('T 'Z))
   putStrLn $ unSCT x
-{-
-foo :: (MonadRandom rnd, SymCT ctexpr, Lambda ctexpr,
-        AddPubCtxCT ctexpr CT F4 F8 (Zq 7) (Zq 7),
-        AdditiveCtxCT ctexpr CT F4 F8 (Zq 7) (Zq 11, Zq 7),
-        RingCtxCT ctexpr CT F4 F8 (Zq 7) (Zq 11, Zq 7),
-        RescaleCtxCT ctexpr CT F4 F8 (Zq 7) (Zq 11, Zq 7) (Zq 7),
-        KeySwitchCtxCT ctexpr TrivGad CT F4 F8 (Zq 7) (Zq 13, (Zq 11, Zq 7)) (Zq 11, Zq 7))
-    => rnd (ctexpr (SHE.CT F4 (Zq 7) (Cyc CT F8 (Zq 11, Zq 7))
-            -> SHE.CT F4 (Zq 7) (Cyc CT F8 (Zq 11, Zq 7))
-            -> SHE.CT F4 (Zq 7) (Cyc CT F8 (Zq 7))))
-foo = compile
-         @'[ '(F4, F8)]
-         @'[ Zq 7, (Zq 11, Zq 7) ]
-         @'[ '(Zq 7, (Zq 11, Zq 7)), '((Zq 11, Zq 7), (Zq 13, (Zq 11, Zq 7))) ]
-         @TrivGad
-         @Double
-         1.0
-         (pt2 @(Cyc CT F4 (Zq 7)) @'Z)
--}
