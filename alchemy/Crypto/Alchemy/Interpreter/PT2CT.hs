@@ -36,20 +36,25 @@ import Crypto.Lol.Applications.SymmSHE hiding (tunnelCT)
 import Data.Dynamic
 import Data.Maybe (mapMaybe)
 import Data.Type.Natural (Nat(..))
+import GHC.TypeLits hiding (type (*))-- for error message
 
 -- singletons exports (:!!), which takes a TypeLit index; we need a TypeNatural index
 type family (xs :: [k1]) !! (d :: Depth) :: k1 where
   (x ': xs) !! ('T 'Z) = x
   (x ': xs) !! ('T ('S s)) = xs !! ('T s)
+  '[]       !! s = TypeError ('Text "Type-level index-out-of-bounds error for (!!). \
+    \You probably need more moduli in your zqs list, or need to correct the computation depth.")
 
 -- a type-lvel map from PT index to CT index
 type family Lookup m map where
   Lookup m ( '(m,m') ': rest) = m'
   Lookup r ( '(m,m') ': rest) = Lookup r rest
+  Lookup a '[] = TypeError ('Text "Could not find " ':<>: 'ShowType a ':$$: 'Text " in a map Lookup.")
 
 type family F m'map zqs d a where
   F m'map zqs d (Cyc t m zp) = CT m zp (Cyc t (Lookup m m'map) (zqs !! d))
   F m'map zqs ('L da db) (a -> b) = F m'map zqs da a -> F m'map zqs db b
+  F m'map zqs d c = TypeError ('Text "Cannot compile a plaintext expression over " ':$$: 'ShowType c)
 
 newtype PT2CT :: [(Factored,Factored)]
            -> [*]
