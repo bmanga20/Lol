@@ -19,9 +19,3 @@ singletons [d|
 
 type family Add1 d where
   Add1 ('T d) = 'T ('S d)
-
--- concrete Z integer representation
---type Z = Int64
-
--- a concrete Z_2^e data type
---type Z2E e = ZqBasic ('PP '(Prime2, e)) Z

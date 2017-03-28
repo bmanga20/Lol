@@ -14,6 +14,7 @@ instance SymCT ShowCT where
 
   type AdditiveCtxCT  ShowCT a = ()
   type RingCtxCT      ShowCT a = ()
+  type ModSwitchCtxCT ShowCT a zp' = ()
   type RescaleCtxCT   ShowCT a zq' = ()
   type AddPubCtxCT    ShowCT (CT m zp (Cyc t m' zq)) = (Show (Cyc t m zp))
   type MulPubCtxCT    ShowCT (CT m zp (Cyc t m' zq)) = (Show (Cyc t m zp))
@@ -23,6 +24,7 @@ instance SymCT ShowCT where
   (SCT _ a) +^ (SCT _ b) = SCT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
   (SCT _ a) *^ (SCT _ b) = SCT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
   negCT (SCT _ a) = SCT 0 $ "-( " ++ a ++ " )"
+  modSwitchPT (SCT _ a) = SCT 0 $ "modSwitch $ " ++ a
   rescaleCT (SCT _ a) = SCT 0 $ "rescale $ " ++ a
   addPublicCT a (SCT _ b) = SCT 0 $ "( " ++ show a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
   mulPublicCT a (SCT _ b) = SCT 0 $ "( " ++ show a ++ " )" ++ " * " ++ "( " ++ b ++ " )"

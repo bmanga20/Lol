@@ -6,12 +6,12 @@
 module Crypto.Alchemy.Interpreter.ShowPT where
 
 import Crypto.Alchemy.Common
+import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
-import Crypto.Alchemy.Language.AddPT
+import Crypto.Alchemy.Language.ModSwPT
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
-import Crypto.Lol (Cyc)
 
 data ShowPT (d :: Depth) a = SPT {bindID::Int, unSPT::String}
 
@@ -30,6 +30,12 @@ instance (Applicative mon) => MulPT mon ShowPT where
   type RingCtxPT ShowPT d a = ()
 
   (*#) = pure $ \(SPT _ a) (SPT _ b) -> SPT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+
+instance ModSwPT ShowPT where
+
+  type ModSwitchCtxPT ShowPT d a zp' = ()
+
+  modSwitchDec (SPT _ a) = SPT 0 $ "modSwitchDec $ " ++ a
 
 instance (Applicative mon) => TunnelPT mon (ShowPT d) where
 

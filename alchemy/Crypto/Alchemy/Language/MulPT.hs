@@ -5,7 +5,7 @@
 module Crypto.Alchemy.Language.MulPT where
 
 import Crypto.Alchemy.Common
-import Crypto.Lol (Cyc, Factored)
+import Crypto.Lol (Cyc)
 import GHC.Exts
 
 -- | Symantics for leveled plaintext operations of some depth @d@.

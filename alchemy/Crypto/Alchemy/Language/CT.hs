@@ -13,6 +13,7 @@ class SymCT expr where
 
   type AdditiveCtxCT  expr ct     :: Constraint
   type RingCtxCT      expr ct     :: Constraint
+  type ModSwitchCtxCT expr ct zp' :: Constraint
   type RescaleCtxCT   expr ct zq' :: Constraint
   type AddPubCtxCT    expr ct     :: Constraint
   type MulPubCtxCT    expr ct     :: Constraint
@@ -27,6 +28,9 @@ class SymCT expr where
 
   (*^) :: (RingCtxCT expr ct, ct ~ CT m zp (Cyc t m' zq))
        => expr ct -> expr ct -> expr ct
+
+  modSwitchPT :: (ModSwitchCtxCT expr ct zp', ct ~ CT m zp (Cyc t m' zq))
+              => expr ct -> expr (CT m zp' (Cyc t m' zq))
 
   rescaleCT :: (RescaleCtxCT expr ct zq', ct ~ CT m zp (Cyc t m' zq))
             => expr (CT m zp (Cyc t m' zq')) -> expr ct

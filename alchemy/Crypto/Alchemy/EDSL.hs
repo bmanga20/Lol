@@ -16,6 +16,7 @@ import Crypto.Alchemy.Language.CT ()
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.AddPT
+import Crypto.Alchemy.Language.ModSwPT ()
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT ()
 import Crypto.Alchemy.Interpreter.CTEval ()

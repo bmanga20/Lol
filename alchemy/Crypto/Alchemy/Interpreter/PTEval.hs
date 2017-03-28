@@ -11,9 +11,10 @@ module Crypto.Alchemy.Interpreter.PTEval where
 
 import Control.Applicative
 import Crypto.Alchemy.Common
+import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
-import Crypto.Alchemy.Language.AddPT
+import Crypto.Alchemy.Language.ModSwPT
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Lol
@@ -38,6 +39,12 @@ instance (Applicative mon) => MulPT mon ID where
   type RingCtxPT ID d a = (Ring a)
 
   (*#) = pure $ \a b -> ID $ unID a * unID b
+
+instance ModSwPT ID where
+
+  type ModSwitchCtxPT ID d (Cyc t m zp) zp' = (RescaleCyc (Cyc t) zp zp', Fact m)
+
+  modSwitchDec = fmap rescaleDec
 
 instance (Applicative mon) => TunnelPT mon (ID d) where
 

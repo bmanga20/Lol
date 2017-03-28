@@ -20,6 +20,7 @@ instance SymCT I where
 
   type AdditiveCtxCT  I a = (Additive a)
   type RingCtxCT      I a = (Ring a)
+  type ModSwitchCtxCT I (CT m zp (Cyc t m' zq)) zp'     = (ModSwitchPTCtx t m' zp zp' zq)
   type RescaleCtxCT   I (CT m zp (Cyc t m' zq)) zq'     = (RescaleCyc (Cyc t) zq' zq, ToSDCtx t m' zp zq')
   type AddPubCtxCT    I (CT m zp (Cyc t m' zq))         = (AddPublicCtx t m m' zp zq)
   type MulPubCtxCT    I (CT m zp (Cyc t m' zq))         = (MulPublicCtx t m m' zp zq)
@@ -29,6 +30,7 @@ instance SymCT I where
   (I a) +^ (I b) = I $ a + b
   (I a) *^ (I b) = I $ a * b
   negCT           = fmap negate
+  modSwitchPT     = fmap SHE.modSwitchPT
   rescaleCT       = fmap rescaleLinearCT
   addPublicCT     = fmap . addPublic
   mulPublicCT     = fmap . mulPublic
