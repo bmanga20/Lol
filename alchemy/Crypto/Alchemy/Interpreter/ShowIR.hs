@@ -9,7 +9,7 @@ module Crypto.Alchemy.Interpreter.ShowIR where
 import Algebra.Additive as Additive (C(..))
 import Algebra.Ring as Ring (C)
 
-import Control.Monad.Identity
+import Control.Applicative
 
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
@@ -25,7 +25,7 @@ instance Lambda ShowIR where
     in SIR (i+1) $ "\\x" ++ show i ++ " -> " ++ b
   app (SIR i f) (SIR _ a) = SIR i $ "( " ++ f ++ " ) " ++ a
 
-instance (Monad mon) => SymIR mon ShowIR where
+instance (Applicative mon) => SymIR mon ShowIR where
 
   type RescaleCtxIR   ShowIR t m m' zp zq' zq = ()
   type AddPubCtxIR    ShowIR t m m' zp     zq = (Show (Cyc t m zp))
@@ -33,11 +33,11 @@ instance (Monad mon) => SymIR mon ShowIR where
   type KeySwitchCtxIR ShowIR t m m' zp     zq = ()
   type TunnelCtxIR    ShowIR t e r s r' s' zp zq = ()
 
-  rescaleIR = return $ \(SIR _ a) -> SIR 0 $ "rescale $ " ++ a
-  addPublicIR = return $ \a (SIR _ b) -> SIR 0 $ "( " ++ show a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
-  mulPublicIR = return $ \a (SIR _ b) -> SIR 0 $ "( " ++ show a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
-  keySwitchQuadIR = return $ \(SIR _ a) -> SIR 0 $ "keySwitch $ " ++ a
-  tunnelIR _ = return $ \(SIR _ a) -> SIR 0 $ "tunnel <FUNC> $ " ++ a
+  rescaleIR = pure $ \(SIR _ a) -> SIR 0 $ "rescale $ " ++ a
+  addPublicIR = pure $ \a (SIR _ b) -> SIR 0 $ "( " ++ show a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
+  mulPublicIR = pure $ \a (SIR _ b) -> SIR 0 $ "( " ++ show a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+  keySwitchQuadIR = pure $ \(SIR _ a) -> SIR 0 $ "keySwitch $ " ++ a
+  tunnelIR _ = pure $ \(SIR _ a) -> SIR 0 $ "tunnel <FUNC> $ " ++ a
 
 instance Additive.C (ShowIR a) where
   zero = SIR 0 "0"

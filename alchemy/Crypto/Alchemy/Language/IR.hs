@@ -13,7 +13,7 @@ import Data.Constraint
 
 -- | Symantics for ciphertext operations.
 
-class SymIR mon expr where
+class (Applicative mon) => SymIR mon expr where
 
   type RescaleCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq' zq :: Constraint
   type AddPubCtxIR expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint

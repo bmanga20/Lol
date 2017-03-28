@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RebindableSyntax          #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
@@ -25,12 +26,17 @@ instance Lambda I where
 -- | Metacircular ciphertext symantics.
 instance SymCT I where
 
+  type AdditiveCtxCT  I t m m' zp zq = (Additive (CT m zp (Cyc t m' zq)))
+  type RingCtxCT      I t m m' zp zq = (Ring (CT m zp (Cyc t m' zq)))
   type RescaleCtxCT   I     t m m' zp zq' zq = (RescaleCyc (Cyc t) zq' zq, ToSDCtx t m' zp zq')
   type AddPubCtxCT    I     t m m' zp     zq = (AddPublicCtx t m m' zp zq)
   type MulPubCtxCT    I     t m m' zp     zq = (MulPublicCtx t m m' zp zq)
   type KeySwitchCtxCT I gad t m m' zp zq' zq = (KeySwitchCtx gad t m' zp zq zq')
   type TunnelCtxCT    I gad t e r s e' r' s' zp zq = (TunnelCtx t r s e' r' s' zp zq gad)
 
+  (I a) +^ (I b) = I $ a + b
+  (I a) *^ (I b) = I $ a * b
+  negCT (I a) = I $ -a
   rescaleCT = I . rescaleLinearCT . unI
   addPublicCT a = I . addPublic a . unI
   mulPublicCT a = I . mulPublic a . unI

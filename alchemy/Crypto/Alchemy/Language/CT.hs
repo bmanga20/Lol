@@ -14,11 +14,22 @@ import Data.Constraint
 
 class SymCT expr where
 
+  type AdditiveCtxCT expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
+  type RingCtxCT expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type RescaleCtxCT expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq' zq :: Constraint
   type AddPubCtxCT expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type MulPubCtxCT expr (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq :: Constraint
   type KeySwitchCtxCT expr gad (t :: Factored -> * -> *) (m :: Factored) (m' :: Factored) zp zq' zq :: Constraint
   type TunnelCtxCT expr gad (t :: Factored -> * -> *) (e :: Factored) (r :: Factored) (s :: Factored) (e' :: Factored) (r' :: Factored) (s' :: Factored) zp zq :: Constraint
+
+  (+^) :: (AdditiveCtxCT expr t m m' zp zq)
+    => expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+
+  negCT :: (AdditiveCtxCT expr t m m' zp zq) => expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+
+  (*^) :: (RingCtxCT expr t m m' zp zq)
+    => expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq)) -> expr (CT m zp (Cyc t m' zq))
+
 
   rescaleCT :: (RescaleCtxCT expr t m m' zp zq' zq)
             => expr (CT m zp (Cyc t m' zq')) -> expr (CT m zp (Cyc t m' zq))

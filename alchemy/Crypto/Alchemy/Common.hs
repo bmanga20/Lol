@@ -1,9 +1,12 @@
 {-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds     #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Crypto.Alchemy.Common where
 
@@ -11,10 +14,20 @@ import Crypto.Lol hiding (type S)
 import Crypto.Lol.Types
 import Data.Type.Natural
 
+import Data.Singletons.Prelude hiding (Lookup)
+import Data.Singletons.TH
+
+singletons [d|
+            -- Positive naturals (1, 2, ...) in Peano representation.
+            data Depth = F Nat       -- one
+                       | N Nat Depth -- successor
+                       deriving (Show, Eq)
+  |]
+
 -- singletons exports (:!!), which takes a TypeLit index; we need a TypeNatural index
-type family (xs :: [k1]) !! (d :: Nat) :: k1 where
-  (x ': xs) !! 'Z = x
-  (x ': xs) !! 'S s = xs !! s
+type family (xs :: [k1]) !! (d :: Depth) :: k1 where
+  (x ': xs) !! ('F 'Z) = x
+  (x ': xs) !! ('F ('S s)) = xs !! ('F s)
 
 -- singletons exports Length, which returns a TypeLit; we need a TypeNatural
 type family Length (a :: [k]) :: Nat where
@@ -32,8 +45,3 @@ type Z = Int64
 
 -- a concrete Z_2^e data type
 type Z2E e = ZqBasic ('PP '(Prime2, e)) Z
-
-class Compile inexpr outexpr a where
-  type CompiledType inexpr a
-
-  compile :: inexpr a -> outexpr (CompiledType inexpr a)
