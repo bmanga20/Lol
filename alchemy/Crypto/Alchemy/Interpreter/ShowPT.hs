@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Crypto.Alchemy.Interpreter.ShowPT where
 
@@ -10,17 +10,10 @@ import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.MulPT
-import Crypto.Alchemy.Language.HomomTunnel
+import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Lol (Cyc)
 
 data ShowPT (d :: Depth) a = SPT {bindID::Int, unSPT::String}
-
-instance LambdaD ShowPT where
-  lamD f =
-    -- EAC: use laziness!
-    let (SPT i b) = f $ SPT i ("x" ++ show i)
-    in SPT (i+1) $ "\\x" ++ show i ++ " -> " ++ b
-  appD (SPT i f) (SPT _ a) = SPT i $ "( " ++ f ++ " ) " ++ a
 
 instance AddPT (ShowPT d) where
   type AddPubCtxPT   (ShowPT d) t m zp = (Show (Cyc t m zp))
@@ -38,11 +31,18 @@ instance (Applicative mon) => MulPT mon ShowPT where
 
   (*#) = pure $ \(SPT _ a) (SPT _ b) -> SPT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
 
-instance (Applicative mon) => HomomTunnel mon (ShowPT d) where
+instance (Applicative mon) => TunnelPT mon (ShowPT d) where
 
   type TunnelCtxPT (ShowPT d) t e r s zp = ()
 
   tunnelPT _ = pure $ \(SPT _ a) -> SPT 0 $ "tunnel <FUNC> $ " ++ a
+
+instance LambdaD ShowPT where
+  lamD f =
+    -- EAC: use laziness!
+    let (SPT i b) = f $ SPT i ("x" ++ show i)
+    in SPT (i+1) $ "\\x" ++ show i ++ " -> " ++ b
+  appD (SPT i f) (SPT _ a) = SPT i $ "( " ++ f ++ " ) " ++ a
 
 instance Lit (ShowPT d) where
   type LitCtx (ShowPT d) a = (Show a)

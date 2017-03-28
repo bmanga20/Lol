@@ -30,18 +30,17 @@ library
   default-language:    Haskell2010
   exposed-modules:     Crypto.Alchemy.EDSL
                        Crypto.Alchemy.Common
-                       Crypto.Alchemy.Language.Lit
-                       Crypto.Alchemy.Language.Lam
-                       Crypto.Alchemy.Language.PT
-                       Crypto.Alchemy.Interpreter.ShowPT
-                       Crypto.Alchemy.Interpreter.PTEval
-                       Crypto.Alchemy.Interpreter.PT2IR
-                       Crypto.Alchemy.Language.IR
-                       Crypto.Alchemy.Interpreter.ShowIR
-                       Crypto.Alchemy.Interpreter.IR2CT
+                       Crypto.Alchemy.Language.AddPT
                        Crypto.Alchemy.Language.CT
-                       Crypto.Alchemy.Interpreter.ShowCT
+                       Crypto.Alchemy.Language.Lam
+                       Crypto.Alchemy.Language.Lit
+                       Crypto.Alchemy.Language.MulPT
+                       Crypto.Alchemy.Language.TunnelPT
                        Crypto.Alchemy.Interpreter.CTEval
+                       Crypto.Alchemy.Interpreter.PT2CT
+                       Crypto.Alchemy.Interpreter.PTEval
+                       Crypto.Alchemy.Interpreter.ShowCT
+                       Crypto.Alchemy.Interpreter.ShowPT
 
 -- test-suite alchemy-test
 --   type:                exitcode-stdio-1.0

@@ -1,14 +1,10 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE PolyKinds        #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE TypeFamilies     #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE DataKinds    #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Crypto.Alchemy.Language.AddPT where
 
-import Crypto.Lol hiding (Pos(..))
-import Data.Constraint
+import Crypto.Lol (Cyc, Factored)
+import GHC.Exts (Constraint)
 
 -- | Symantics for leveled plaintext operations of some depth @d@.
 

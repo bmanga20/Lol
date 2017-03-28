@@ -1,15 +1,12 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies     #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Crypto.Alchemy.Language.MulPT where
 
 import Crypto.Alchemy.Common
-import Crypto.Lol hiding (Pos(..), type (*))
-import Data.Type.Natural
-import Data.Constraint
+import Crypto.Lol (Cyc, Factored)
+import GHC.Exts
 
 -- | Symantics for leveled plaintext operations of some depth @d@.
 
@@ -19,6 +16,6 @@ class (Applicative mon) => MulPT mon expr where
 
   -- | Plaintext multiplication.  Inputs must be one depth less than
   -- output (so we can't use 'Ring').
-  (*#) :: (RingCtxPT expr ('F d) t m zp, a ~ Cyc t m zp) =>
+  (*#) :: (RingCtxPT expr d t m zp, a ~ Cyc t m zp) =>
           -- CJP: generalize input depths?
-          mon (expr ('F ('S d)) a -> expr ('F ('S d)) a -> expr ('F d) a)
+          mon (expr (Add1 d) a -> expr (Add1 d) a -> expr d a)

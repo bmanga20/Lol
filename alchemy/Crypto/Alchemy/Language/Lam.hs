@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Crypto.Alchemy.Language.Lam where
 
@@ -19,7 +18,7 @@ class Lambda expr where
 
 class LambdaD expr where
   -- | Abstract.
-  lamD :: (expr ('F da) a -> expr db b) -> expr ('N da db) (a -> b)
+  lamD :: (expr da a -> expr db b) -> expr ('L da db) (a -> b)
 
   -- | Apply.
-  appD :: expr ('N da db) (a -> b) -> expr ('F da) a -> expr db b
+  appD :: expr ('L da db) (a -> b) -> expr da a -> expr db b
