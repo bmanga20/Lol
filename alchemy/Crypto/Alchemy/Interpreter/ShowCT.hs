@@ -6,17 +6,18 @@ import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
 import Crypto.Alchemy.Language.CT
 import Crypto.Lol (Cyc)
+import Crypto.Lol.Applications.SymmSHE (CT)
 
 data ShowCT (a :: *) = SCT {bindID::Int, unSCT::String}
 
 instance SymCT ShowCT where
 
-  type AdditiveCtxCT  ShowCT t m m' zp     zq = ()
-  type RingCtxCT      ShowCT t m m' zp     zq = ()
-  type RescaleCtxCT   ShowCT t m m' zp zq' zq = ()
-  type AddPubCtxCT    ShowCT t m m' zp     zq = (Show (Cyc t m zp))
-  type MulPubCtxCT    ShowCT t m m' zp     zq = (Show (Cyc t m zp))
-  type KeySwitchCtxCT ShowCT t m m' zp zq' zq       gad = ()
+  type AdditiveCtxCT  ShowCT a = ()
+  type RingCtxCT      ShowCT a = ()
+  type RescaleCtxCT   ShowCT a zq' = ()
+  type AddPubCtxCT    ShowCT (CT m zp (Cyc t m' zq)) = (Show (Cyc t m zp))
+  type MulPubCtxCT    ShowCT (CT m zp (Cyc t m' zq)) = (Show (Cyc t m zp))
+  type KeySwitchCtxCT ShowCT a zq' gad = ()
   type TunnelCtxCT    ShowCT t e r s e' r' s' zp zq gad = ()
 
   (SCT _ a) +^ (SCT _ b) = SCT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"

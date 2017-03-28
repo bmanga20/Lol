@@ -15,10 +15,10 @@ import Crypto.Lol (Cyc)
 
 data ShowPT (d :: Depth) a = SPT {bindID::Int, unSPT::String}
 
-instance AddPT (ShowPT d) where
-  type AddPubCtxPT   (ShowPT d) t m zp = (Show (Cyc t m zp))
-  type MulPubCtxPT   (ShowPT d) t m zp = (Show (Cyc t m zp))
-  type AdditiveCtxPT (ShowPT d) t m zp = ()
+instance AddPT (ShowPT) where
+  type AddPubCtxPT   ShowPT d a = (Show a)
+  type MulPubCtxPT   ShowPT d a = (Show a)
+  type AdditiveCtxPT ShowPT d a = ()
 
   (SPT _ a) +# (SPT _ b) = SPT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
   negPT (SPT _ a) = SPT 0 $ "neg $ " ++ a
@@ -27,7 +27,7 @@ instance AddPT (ShowPT d) where
 
 instance (Applicative mon) => MulPT mon ShowPT where
 
-  type RingCtxPT ShowPT d t m zp = ()
+  type RingCtxPT ShowPT d a = ()
 
   (*#) = pure $ \(SPT _ a) (SPT _ b) -> SPT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
 

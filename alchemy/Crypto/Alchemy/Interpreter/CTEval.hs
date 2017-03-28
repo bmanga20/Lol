@@ -18,13 +18,13 @@ newtype I a = I { unI :: a }
 -- | Metacircular ciphertext symantics.
 instance SymCT I where
 
-  type AdditiveCtxCT  I t m m' zp     zq = (Additive (CT m zp (Cyc t m' zq)))
-  type RingCtxCT      I t m m' zp     zq = (Ring (CT m zp (Cyc t m' zq)))
-  type RescaleCtxCT   I t m m' zp zq' zq = (RescaleCyc (Cyc t) zq' zq, ToSDCtx t m' zp zq')
-  type AddPubCtxCT    I t m m' zp     zq = (AddPublicCtx t m m' zp zq)
-  type MulPubCtxCT    I t m m' zp     zq = (MulPublicCtx t m m' zp zq)
-  type KeySwitchCtxCT I t m m' zp zq' zq       gad = (KeySwitchCtx gad t m' zp zq zq')
-  type TunnelCtxCT    I t e r s e' r' s' zp zq gad = (TunnelCtx t r s e' r' s' zp zq gad)
+  type AdditiveCtxCT  I a = (Additive a)
+  type RingCtxCT      I a = (Ring a)
+  type RescaleCtxCT   I (CT m zp (Cyc t m' zq)) zq'     = (RescaleCyc (Cyc t) zq' zq, ToSDCtx t m' zp zq')
+  type AddPubCtxCT    I (CT m zp (Cyc t m' zq))         = (AddPublicCtx t m m' zp zq)
+  type MulPubCtxCT    I (CT m zp (Cyc t m' zq))         = (MulPublicCtx t m m' zp zq)
+  type KeySwitchCtxCT I (CT m zp (Cyc t m' zq)) zq' gad = (KeySwitchCtx gad t m' zp zq zq')
+  type TunnelCtxCT    I t e r s e' r' s' zp zq gad      = (TunnelCtx t r s e' r' s' zp zq gad)
 
   (I a) +^ (I b) = I $ a + b
   (I a) *^ (I b) = I $ a * b

@@ -32,23 +32,23 @@ import Data.Type.Natural
 
 -- EAC: Annoying that we need two AddPT constraints here!
 pt1 ::
-  (AddPT (ptexpr d), AddPT (ptexpr (Add1 d)), MulPT mon ptexpr, a ~ Cyc t m zp,
-   AddPubCtxPT (ptexpr d) t m zp, AdditiveCtxPT (ptexpr (Add1 d)) t m zp,
-   RingCtxPT ptexpr d t m zp, Ring a, Applicative mon)
+  (AddPT ptexpr, MulPT mon ptexpr, a ~ Cyc t m zp,
+   AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
+   RingCtxPT ptexpr d a, Ring a, Applicative mon)
   => mon (ptexpr (Add1 d) a -> ptexpr (Add1 d) a -> ptexpr d a)
 pt1 = (\star a b -> addPublicPT 2 $ a `star` (a +# b)) <$> (*#)
 
 pt2 :: forall a d ptexpr mon t m zp .
-  (AddPT (ptexpr d), AddPT (ptexpr (Add1 d)), MulPT mon ptexpr, a ~ Cyc t m zp,
-   AddPubCtxPT (ptexpr d) t m zp, AdditiveCtxPT (ptexpr (Add1 d)) t m zp,
-   RingCtxPT ptexpr d t m zp, Ring a, Applicative mon, LambdaD ptexpr)
+  (AddPT ptexpr, MulPT mon ptexpr, a ~ Cyc t m zp,
+   AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
+   RingCtxPT ptexpr d a, Ring a, Applicative mon, LambdaD ptexpr)
   => mon (ptexpr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
 pt2 = (\f -> lamD $ lamD . f) <$> pt1
 
 pt3 :: forall a d ptexpr mon t m zp .
-  (AddPT (ptexpr d), AddPT (ptexpr (Add1 d)), MulPT mon ptexpr, a ~ Cyc t m zp,
-   AddPubCtxPT (ptexpr d) t m zp, AdditiveCtxPT (ptexpr (Add1 d)) t m zp,
-   RingCtxPT ptexpr d t m zp, Ring a, Applicative mon, LambdaD ptexpr,
+  (AddPT ptexpr, MulPT mon ptexpr, a ~ Cyc t m zp,
+   AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
+   RingCtxPT ptexpr d a, Ring a, Applicative mon, LambdaD ptexpr,
    Lit (ptexpr (Add1 d)), LitCtx (ptexpr (Add1 d)) (Cyc t m zp))
   => a -> a -> mon (ptexpr d a)
 pt3 a b = (\f -> appD (appD f $ lit a) $ lit b) <$> pt2

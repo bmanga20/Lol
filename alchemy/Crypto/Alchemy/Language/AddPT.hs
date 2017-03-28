@@ -3,23 +3,25 @@
 
 module Crypto.Alchemy.Language.AddPT where
 
-import Crypto.Lol (Cyc, Factored)
+import Crypto.Alchemy.Common
+import Crypto.Lol (Cyc)
 import GHC.Exts (Constraint)
 
 -- | Symantics for leveled plaintext operations of some depth @d@.
 
 class AddPT expr where
-  type AddPubCtxPT   expr (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
-  type MulPubCtxPT   expr (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
-  type AdditiveCtxPT expr (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
+  type AddPubCtxPT   expr (d :: Depth) a :: Constraint
+  type MulPubCtxPT   expr (d :: Depth) a :: Constraint
+  type AdditiveCtxPT expr (d :: Depth) a :: Constraint
 
-  addPublicPT :: (AddPubCtxPT expr t m zp, a ~ Cyc t m zp) => a -> expr a -> expr a
-  mulPublicPT :: (MulPubCtxPT expr t m zp, a ~ Cyc t m zp) => a -> expr a -> expr a
+  addPublicPT :: (AddPubCtxPT expr d a, a ~ Cyc t m zp) => a -> expr d a -> expr d a
 
-  (+#) :: (AdditiveCtxPT expr t m zp, a ~ Cyc t m zp) => expr a -> expr a -> expr a
+  mulPublicPT :: (MulPubCtxPT expr d a, a ~ Cyc t m zp) => a -> expr d a -> expr d a
 
-  negPT :: (AdditiveCtxPT expr t m zp, a ~ Cyc t m zp) => expr a -> expr a
+  (+#) :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp) => expr d a -> expr d a -> expr d a
 
-(-#) :: (AddPT expr, AdditiveCtxPT expr t m zp, a ~ Cyc t m zp)
-     => expr a -> expr a -> expr a
+  negPT :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp) => expr d a -> expr d a
+
+(-#) :: (AddPT expr, AdditiveCtxPT expr d a, a ~ Cyc t m zp)
+     => expr d a -> expr d a -> expr d a
 a -# b = a +# (negPT b)

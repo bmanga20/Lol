@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -56,14 +57,19 @@ type family F m'map zqs d a where
   F m'map zqs ('L da db) (a -> b) = F m'map zqs da a -> F m'map zqs db b
   F m'map zqs d c = TypeError ('Text "Cannot compile a plaintext expression over " ':$$: 'ShowType c)
 
-newtype PT2CT :: [(Factored,Factored)]
-           -> [*]
-           -> [(*,*)]
-           -> *
-           -> *
-           -> (* -> *)
-           -> Depth
-           -> *
+newtype PT2CT :: [(Factored,Factored)] -- map from plaintext index to ciphertext index
+           -> [*]                      -- list of ciphertext moduli, smallest first
+                                       --   e.g. '[ Zq 7, (Zq 11, Zq 7), (Zq 13, (Zq 11, Zq 7))]
+                                       --   Nesting order matters for efficiency!
+           -> [(*,*)]                  -- map from ciphertext modulus to corresponding hint modulus
+                                       --   e.g. '[ '(Zq 7, (Zq 11, Zq 7))]
+                                       --   Nesting order matters for efficiency!
+           -> *                        -- gadget for key switching
+           -> *                        -- variance type
+           -> (* -> *)                 -- ciphertext interpreter
+           -> Depth                    -- (multiplicative) depth of the computation
+                                       --   n.b. This should usually be ('T 'Z) in top level code.
+           -> *                        -- type contained in the expression
            -> * where
   P2C :: {runP2C :: ctexpr (F m'map zqs d a)} -> PT2CT m'map zqs zq'map gad v ctexpr d a
 
@@ -78,48 +84,55 @@ compile v a = runP2C <$> (flip evalStateT ([],[]) $ flip runReaderT v a)
 
 ---- Language instances
 
-instance (SymCT ctexpr) => AddPT (PT2CT m'map zqs zq'map gad v ctexpr d) where
+instance (SymCT ctexpr) => AddPT (PT2CT m'map zqs zq'map gad v ctexpr) where
 
-  type AddPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr d) t m zp =
-    (AddPubCtxCT ctexpr t m (Lookup m m'map) zp (zqs !! d))
-  type MulPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr d) t m zp =
-    (MulPubCtxCT ctexpr t m (Lookup m m'map) zp (zqs !! d))
-  type AdditiveCtxPT (PT2CT m'map zqs zq'map gad v ctexpr d) t m zp =
-    (AdditiveCtxCT ctexpr t m (Lookup m m'map) zp (zqs !! d))
+  type AddPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (AddPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
+  type MulPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (MulPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
+  type AdditiveCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (AdditiveCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
 
   (P2C a) +# (P2C b) = P2C $ a +^ b
   negPT = p2cmap negCT
   addPublicPT = p2cmap . addPublicCT
   mulPublicPT = p2cmap . mulPublicCT
 
+type RingCtxPT' ctexpr t m m' z zp zq zq' zq'map gad v =
+  (RingCtxCT ctexpr (CT m zp (Cyc t m' zq')),
+   RescaleCtxCT ctexpr (CT m zp (Cyc t m' zq)) zq',
+   KeySwitchCtxCT ctexpr (CT m zp (Cyc t m' zq')) (Lookup zq' zq'map) gad,
+   GenSKCtx t m' z v,
+   KSHintCtx gad t m' z (Lookup zq' zq'map),
+   Typeable (Cyc t m' z),
+   Typeable (KSQuadCircHint gad (Cyc t m' (Lookup zq' zq'map))))
+
 instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
   => MulPT mon (PT2CT m'map zqs zq'map gad v ctexpr) where
-  type RingCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d t m zp =
-    (RingCtxCT ctexpr t m (Lookup m m'map) zp (zqs !! (Add1 d)),
-     RescaleCtxCT ctexpr t m (Lookup m m'map) zp (zqs !! (Add1 d)) (zqs !! d),
-     KeySwitchCtxCT ctexpr t m (Lookup m m'map) zp (Lookup (zqs !! (Add1 d)) zq'map) (zqs !! (Add1 d)) gad,
-     GenSKCtx t (Lookup m m'map) (LiftOf zp) v,
-     KSHintCtx gad t (Lookup m m'map) (LiftOf zp) (Lookup (zqs !! (Add1 d)) zq'map),
-     Typeable (Cyc t (Lookup m m'map) (LiftOf zp)),
-     Typeable (KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup (zqs !! (Add1 d)) zq'map))))
+  type RingCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (RingCtxPT' ctexpr t m (Lookup m m'map) (LiftOf zp) zp (zqs !! d) (zqs !! (Add1 d)) zq'map gad v)
 
   -- EAC: should key switch before the mul, only if necessary. Current signature of *# doesn't allow this...
   (*#) :: forall rp t m zp zqid zq expr d .
        (rp ~ Cyc t m zp, zqid ~ Add1 d, zq ~ (zqs !! zqid),
-        expr ~ PT2CT m'map zqs zq'map gad v ctexpr, RingCtxPT expr d t m zp)
+        expr ~ PT2CT m'map zqs zq'map gad v ctexpr, RingCtxPT expr d (Cyc t m zp))
        => mon (expr zqid rp -> expr zqid rp -> expr d rp)
   (*#) = do
     hint :: KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup zq zq'map)) <-
       getKSHint (Proxy::Proxy zq'map) (Proxy::Proxy (LiftOf zp)) (Proxy::Proxy zq)
     return $ \(P2C a) (P2C b) -> P2C $ rescaleCT $ keySwitchQuadCT hint $ a *^ b
 
+type TunnelCtxPT' ctexpr t e r s r' s' z zp zq gad v =
+  (TunnelCtxCT ctexpr t e r s (e * (r' / r)) r' s'   zp zq gad,
+   GenTunnelInfoCtx   t e r s (e * (r' / r)) r' s' z zp zq gad,
+   GenSKCtx t r' z v, Typeable (Cyc t r' z),
+   GenSKCtx t s' z v, Typeable (Cyc t s' z))
+
 instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
   => TunnelPT mon (PT2CT m'map zqs zq'map gad v ctexpr d) where
   type TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr d) t e r s zp =
-    (TunnelCtxCT ctexpr t e r s (e * ((Lookup r m'map) / r)) (Lookup r m'map) (Lookup s m'map) zp (zqs !! d) gad,
-     GenSKCtx t (Lookup r m'map) (LiftOf zp) v, Typeable (Cyc t (Lookup r m'map) (LiftOf zp)),
-     GenSKCtx t (Lookup s m'map) (LiftOf zp) v, Typeable (Cyc t (Lookup s m'map) (LiftOf zp)),
-     GenTunnelInfoCtx t e r s (e * ((Lookup r m'map) / r)) (Lookup r m'map) (Lookup s m'map) (LiftOf zp) zp (zqs !! d) gad)
+    (TunnelCtxPT' ctexpr t e r s (Lookup r m'map) (Lookup s m'map) (LiftOf zp) zp (zqs !! d) gad v)
+
   -- EAC: TODO Need to modSwitch up before a *sequence* of tunnels, and down after. How do we detect this?
   tunnelPT f = do
     thint <- genTunnHint @gad f

@@ -22,11 +22,11 @@ import Crypto.Lol
 newtype ID (d :: Depth) a = ID {unID :: a} deriving (Show, Eq, Functor)
 
 -- | Metacircular plaintext symantics.
-instance AddPT (ID d) where
+instance AddPT ID where
 
-  type AddPubCtxPT   (ID d) t m zp = (Additive (Cyc t m zp))
-  type MulPubCtxPT   (ID d) t m zp = (Ring (Cyc t m zp))
-  type AdditiveCtxPT (ID d) t m zp = (Additive (Cyc t m zp))
+  type AddPubCtxPT   ID d a = (Additive a)
+  type MulPubCtxPT   ID d a = (Ring a)
+  type AdditiveCtxPT ID d a = (Additive a)
 
   a +# b = ID $ unID a + unID b
   negPT         = fmap negate
@@ -35,7 +35,7 @@ instance AddPT (ID d) where
 
 instance (Applicative mon) => MulPT mon ID where
 
-  type RingCtxPT ID d t m zp = (Ring (Cyc t m zp))
+  type RingCtxPT ID d a = (Ring a)
 
   (*#) = pure $ \a b -> ID $ unID a * unID b
 

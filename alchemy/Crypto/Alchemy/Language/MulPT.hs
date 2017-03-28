@@ -12,10 +12,10 @@ import GHC.Exts
 
 class (Applicative mon) => MulPT mon expr where
 
-  type RingCtxPT expr (d :: Depth) (t :: Factored -> * -> *) (m :: Factored) zp :: Constraint
+  type RingCtxPT expr (d :: Depth) a :: Constraint
 
   -- | Plaintext multiplication.  Inputs must be one depth less than
   -- output (so we can't use 'Ring').
-  (*#) :: (RingCtxPT expr d t m zp, a ~ Cyc t m zp) =>
+  (*#) :: (RingCtxPT expr d a, a ~ Cyc t m zp) =>
           -- CJP: generalize input depths?
           mon (expr (Add1 d) a -> expr (Add1 d) a -> expr d a)
