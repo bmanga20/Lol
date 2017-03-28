@@ -3,7 +3,7 @@
 
 module Crypto.Alchemy.Language.AddPT where
 
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Lol (Cyc)
 import GHC.Exts (Constraint)
 

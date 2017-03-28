@@ -25,7 +25,7 @@ import Control.Monad.Random
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.CT

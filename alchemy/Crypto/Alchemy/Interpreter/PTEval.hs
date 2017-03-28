@@ -10,7 +10,7 @@
 module Crypto.Alchemy.Interpreter.PTEval where
 
 import Control.Applicative
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit

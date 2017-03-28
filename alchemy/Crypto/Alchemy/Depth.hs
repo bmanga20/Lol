@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Crypto.Alchemy.Common where
+module Crypto.Alchemy.Depth where
 
 import Data.Singletons.Prelude
 import Data.Singletons.TH

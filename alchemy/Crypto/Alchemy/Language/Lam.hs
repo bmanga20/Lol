@@ -2,7 +2,7 @@
 
 module Crypto.Alchemy.Language.Lam where
 
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 
 -- | Lambda abstraction and application.
 

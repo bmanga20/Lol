@@ -11,7 +11,7 @@ module Crypto.Alchemy.EDSL where
 
 import Control.Applicative
 import Control.Monad.Identity
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Alchemy.Language.CT ()
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit

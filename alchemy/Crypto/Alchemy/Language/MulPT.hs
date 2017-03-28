@@ -4,7 +4,7 @@
 
 module Crypto.Alchemy.Language.MulPT where
 
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Lol (Cyc)
 import GHC.Exts
 

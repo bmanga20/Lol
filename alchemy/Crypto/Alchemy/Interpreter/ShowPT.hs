@@ -5,7 +5,7 @@
 
 module Crypto.Alchemy.Interpreter.ShowPT where
 
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit

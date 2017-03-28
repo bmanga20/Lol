@@ -28,12 +28,13 @@ library
                      , singletons
                      , type-natural
   default-language:    Haskell2010
-  exposed-modules:     Crypto.Alchemy.EDSL
-                       Crypto.Alchemy.Common
+  exposed-modules:     Crypto.Alchemy.Depth
+                       Crypto.Alchemy.EDSL
                        Crypto.Alchemy.Language.AddPT
                        Crypto.Alchemy.Language.CT
                        Crypto.Alchemy.Language.Lam
                        Crypto.Alchemy.Language.Lit
+                       Crypto.Alchemy.Language.ModSwPT
                        Crypto.Alchemy.Language.MulPT
                        Crypto.Alchemy.Language.TunnelPT
                        Crypto.Alchemy.Interpreter.CTEval

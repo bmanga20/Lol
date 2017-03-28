@@ -3,7 +3,7 @@
 
 module Crypto.Alchemy.Language.ModSwPT where
 
-import Crypto.Alchemy.Common
+import Crypto.Alchemy.Depth
 import Crypto.Lol (Cyc, Prime2, PrimePower(PP), Pos(..))
 import Crypto.Lol.Types (ZqBasic)
 import GHC.Exts
