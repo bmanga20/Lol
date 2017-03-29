@@ -8,7 +8,10 @@ import Crypto.Alchemy.Language.CT
 import Crypto.Lol (Cyc)
 import Crypto.Lol.Applications.SymmSHE (CT)
 
-data ShowCT (a :: *) = SCT {bindID::Int, unSCT::String}
+unSCT :: ShowCT a -> String
+unSCT (SCT a) = a 0
+
+data ShowCT (a :: *) = SCT (Int -> String)
 
 instance SymCT ShowCT where
 
@@ -21,23 +24,23 @@ instance SymCT ShowCT where
   type KeySwitchCtxCT ShowCT a zq' gad = ()
   type TunnelCtxCT    ShowCT t e r s e' r' s' zp zq gad = ()
 
-  (SCT _ a) +^ (SCT _ b) = SCT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
-  (SCT _ a) *^ (SCT _ b) = SCT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
-  negCT (SCT _ a) = SCT 0 $ "-( " ++ a ++ " )"
-  modSwitchPT (SCT _ a) = SCT 0 $ "modSwitch $ " ++ a
-  rescaleCT (SCT _ a) = SCT 0 $ "rescale $ " ++ a
-  addPublicCT a (SCT _ b) = SCT 0 $ "( " ++ show a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
-  mulPublicCT a (SCT _ b) = SCT 0 $ "( " ++ show a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
-  keySwitchQuadCT _ (SCT _ a) = SCT 0 $ "keySwitch <HINT> $ " ++ a
-  tunnelCT _ (SCT _ a) = SCT 0 $ "tunnel <FUNC> $ " ++ a
+  (SCT a) +^ (SCT b) = SCT $ \i -> "( " ++ a i ++ " )" ++ " + " ++ "( " ++ b i ++ " )"
+  (SCT a) *^ (SCT b) = SCT $ \i -> "( " ++ a i ++ " )" ++ " * " ++ "( " ++ b i ++ " )"
+  negCT (SCT a) = SCT $ \i -> "-( " ++ a i ++ " )"
+  modSwitchPT (SCT a) = SCT $ \i -> "modSwitch $ " ++ a i
+  rescaleCT (SCT a) = SCT $ \i -> "rescale $ " ++ a i
+  addPublicCT a (SCT b) = SCT $ \i -> "( " ++ show a ++ " )" ++ " + " ++ "( " ++ b i ++ " )"
+  mulPublicCT a (SCT b) = SCT $ \i -> "( " ++ show a ++ " )" ++ " * " ++ "( " ++ b i ++ " )"
+  keySwitchQuadCT _ (SCT a) = SCT $ \i -> "keySwitch <HINT> $ " ++ a i
+  tunnelCT _ (SCT a) = SCT $ \i -> "tunnel <FUNC> $ " ++ a i
 
 instance Lambda ShowCT where
-  lam f =
-    -- EAC: use laziness!
-    let (SCT i b) = f $ SCT i ("x" ++ show i)
-    in SCT (i+1) $ "\\x" ++ show i ++ " -> " ++ b
-  app (SCT i f) (SCT _ a) = SCT i $ "( " ++ f ++ " ) " ++ a
+  lam f = SCT $ \i ->
+    let x = "x" ++ show i
+        (SCT b) = f $ SCT $ const x
+    in "\\" ++ x ++ " -> " ++ (b $ i+1)
+  app (SCT f) (SCT a) = SCT $ \i -> "( " ++ f i ++ " ) " ++ a i
 
 instance Lit ShowCT where
   type LitCtx ShowCT a = (Show a)
-  lit a = SCT 0 $ show a
+  lit = SCT . const . show

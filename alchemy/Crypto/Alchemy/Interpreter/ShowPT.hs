@@ -13,43 +13,46 @@ import Crypto.Alchemy.Language.ModSwPT
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
 
-data ShowPT (d :: Depth) a = SPT {bindID::Int, unSPT::String}
+unSPT :: ShowPT d a -> String
+unSPT (SPT a) = a 0
+
+data ShowPT (d :: Depth) a = SPT (Int -> String)
 
 instance AddPT (ShowPT) where
   type AddPubCtxPT   ShowPT d a = (Show a)
   type MulPubCtxPT   ShowPT d a = (Show a)
   type AdditiveCtxPT ShowPT d a = ()
 
-  (SPT _ a) +# (SPT _ b) = SPT 0 $ "( " ++ a ++ " )" ++ " + " ++ "( " ++ b ++ " )"
-  negPT (SPT _ a) = SPT 0 $ "neg $ " ++ a
-  addPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b ++ " )"
-  mulPublicPT a (SPT _ b) = SPT 0 $ "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+  (SPT a) +# (SPT b) = SPT $ \i -> "( " ++ a i ++ " )" ++ " + " ++ "( " ++ b i ++ " )"
+  negPT (SPT a) = SPT $ \i -> "neg $ " ++ a i
+  addPublicPT a (SPT b) = SPT $ \i -> "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b i ++ " )"
+  mulPublicPT a (SPT b) = SPT $ \i -> "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b i ++ " )"
 
 instance (Applicative mon) => MulPT mon ShowPT where
 
   type RingCtxPT ShowPT d a = ()
 
-  (*#) = pure $ \(SPT _ a) (SPT _ b) -> SPT 0 $ "( " ++ a ++ " )" ++ " * " ++ "( " ++ b ++ " )"
+  (*#) = pure $ \(SPT a) (SPT b) -> SPT $ \i -> "( " ++ a i ++ " )" ++ " * " ++ "( " ++ b i ++ " )"
 
 instance ModSwPT ShowPT where
 
   type ModSwitchCtxPT ShowPT d a zp' = ()
 
-  modSwitchDec (SPT _ a) = SPT 0 $ "modSwitchDec $ " ++ a
+  modSwitchDec (SPT a) = SPT $ \i -> "modSwitchDec $ " ++ a i
 
 instance (Applicative mon) => TunnelPT mon (ShowPT d) where
 
   type TunnelCtxPT (ShowPT d) t e r s zp = ()
 
-  tunnelPT _ = pure $ \(SPT _ a) -> SPT 0 $ "tunnel <FUNC> $ " ++ a
+  tunnelPT _ = pure $ \(SPT a) -> SPT $ \i -> "tunnel <FUNC> $ " ++ a i
 
 instance LambdaD ShowPT where
-  lamD f =
-    -- EAC: use laziness!
-    let (SPT i b) = f $ SPT i ("x" ++ show i)
-    in SPT (i+1) $ "\\x" ++ show i ++ " -> " ++ b
-  appD (SPT i f) (SPT _ a) = SPT i $ "( " ++ f ++ " ) " ++ a
+  lamD f = SPT $ \i ->
+    let x = "x" ++ show i
+        (SPT b) = f $ SPT $ const x
+    in "\\" ++ x ++ " -> " ++ (b $ i+1)
+  appD (SPT f) (SPT a) = SPT $ \i -> "( " ++ f i ++ " ) " ++ a i
 
 instance Lit (ShowPT d) where
   type LitCtx (ShowPT d) a = (Show a)
-  lit a = SPT 0 $ show a
+  lit a = SPT $ \_ -> show a
