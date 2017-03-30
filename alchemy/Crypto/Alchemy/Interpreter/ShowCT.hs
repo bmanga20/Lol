@@ -18,7 +18,7 @@ instance SymCT ShowCT where
   type AdditiveCtxCT  ShowCT a = ()
   type RingCtxCT      ShowCT a = ()
   type ModSwitchCtxCT ShowCT a zp' = ()
-  type RescaleCtxCT   ShowCT a zq' = ()
+  type RescaleCtxCT   ShowCT t m m' zp zq zq' = ()
   type AddPubCtxCT    ShowCT (CT m zp (Cyc t m' zq)) = (Show (Cyc t m zp))
   type MulPubCtxCT    ShowCT (CT m zp (Cyc t m' zq)) = (Show (Cyc t m zp))
   type KeySwitchCtxCT ShowCT a zq' gad = ()

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTSyntax            #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -79,11 +80,25 @@ p2cmap :: (ctexpr (CTType m'map zqs d a) -> ctexpr (CTType m'map zqs d' b))
            -> PT2CT m'map zqs zq'map gad v ctexpr d' b
 p2cmap f = P2C . f . runP2C
 
+-- hidden constructor
+newtype CustomMonad v (rnd :: * -> *) a = CMon {unCMon :: ReaderT v (StateT ([Dynamic],[Dynamic]) rnd) a}
+  deriving (Functor, Applicative, Monad, MonadReader v, MonadState ([Dynamic],[Dynamic]), MonadRandom)
+
+-- hidden constructor
+newtype PT2CTState = St ([Dynamic],[Dynamic])
+
 -- explicit forall for type application
-compile :: forall m'map zqs zq'map gad v ctexpr d a rnd mon .
-  (MonadRandom rnd, mon ~ ReaderT v (StateT ([Dynamic],[Dynamic]) rnd))
-  => v -> mon (PT2CT m'map zqs zq'map gad v ctexpr d a) -> rnd (ctexpr (CTType m'map zqs d a))
-compile v a = runP2C <$> (flip evalStateT ([],[]) $ flip runReaderT v a)
+compile :: forall m'map zqs zq'map gad v ctexpr d a rnd .
+  (MonadRandom rnd)
+  => v -> CustomMonad v rnd (PT2CT m'map zqs zq'map gad v ctexpr d a) -> rnd (ctexpr (CTType m'map zqs d a), PT2CTState)
+compile v a = do
+  (b,s) <- flip runStateT ([],[]) $ flip runReaderT v $ unCMon a
+  return (runP2C b, St s)
+
+-- idea: if we create a CT with a type that doesn't appear in
+  -- The following sig means we can't give ctexpr a Lit instance
+--encryptArg :: PT2CTState -> Cyc t m zp -> ctexpr (CT m zp (Cyc t m' zq))
+--encryptArg
 
 ---- Language instances
 
@@ -103,7 +118,7 @@ instance (SymCT ctexpr) => AddPT (PT2CT m'map zqs zq'map gad v ctexpr) where
 
 type RingCtxPT' ctexpr t m m' z zp zq zq' zq'map gad v =
   (RingCtxCT ctexpr (CT m zp (Cyc t m' zq')),
-   RescaleCtxCT ctexpr (CT m zp (Cyc t m' zq)) zq',
+   RescaleCtxCT ctexpr t m m' zp zq zq',
    KeySwitchCtxCT ctexpr (CT m zp (Cyc t m' zq')) (Lookup zq' zq'map) gad,
    GenSKCtx t m' z v,
    KSHintCtx gad t m' z (Lookup zq' zq'map),
@@ -131,21 +146,24 @@ instance (SymCT ctexpr) => ModSwPT (PT2CT m'map zqs zq'map gad v ctexpr) where
 
   modSwitchDec = p2cmap modSwitchPT
 
-type TunnelCtxPT' ctexpr t e r s r' s' z zp zq gad v =
-  (TunnelCtxCT ctexpr t e r s (e * (r' / r)) r' s'   zp zq gad,
-   GenTunnelInfoCtx   t e r s (e * (r' / r)) r' s' z zp zq gad,
-   GenSKCtx t r' z v, Typeable (Cyc t r' z),
-   GenSKCtx t s' z v, Typeable (Cyc t s' z))
+type TunnelCtxPT' ctexpr t e r s r' s' z zp zq zq' gad v =
+  (TunnelCtxCT ctexpr t e r s (e * (r' / r)) r' s'   zp zq' gad,
+   GenTunnelInfoCtx   t e r s (e * (r' / r)) r' s' z zp zq' gad,
+   GenSKCtx t r' z v, GenSKCtx t s' z v,
+   Typeable t, Typeable r', Typeable s', Typeable z, -- bug; see genTunnHint
+   RescaleCtxCT ctexpr t r r' zp zq' zq, RescaleCtxCT ctexpr t s s' zp zq zq')
 
 instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
   => TunnelPT mon (PT2CT m'map zqs zq'map gad v ctexpr d) where
   type TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr d) t e r s zp =
-    (TunnelCtxPT' ctexpr t e r s (Lookup r m'map) (Lookup s m'map) (LiftOf zp) zp (zqs !! d) gad v)
+    (TunnelCtxPT' ctexpr t e r s (Lookup r m'map) (Lookup s m'map) (LiftOf zp) zp (zqs !! d) (zqs !! (Add1 d)) gad v)
 
-  -- EAC: TODO Need to modSwitch up before a *sequence* of tunnels, and down after. How do we detect this?
+  tunnelPT :: (TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr d) t e r s zp)
+           => Linear t zp e r s -> mon (PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t r zp)
+                                        -> PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t s zp))
   tunnelPT f = do
-    thint <- genTunnHint @gad f
-    return $ p2cmap (tunnelCT thint)
+    thint <- genTunnHint @gad @(zqs !! (Add1 d)) f
+    return $ p2cmap (rescaleCT . tunnelCT thint . rescaleCT)
 
 instance (Lambda ctexpr) => LambdaD (PT2CT m'map zqs zq'map gad v ctexpr) where
   lamD f = P2C $ lam $ runP2C . f . P2C
@@ -168,7 +186,7 @@ getKey = keyLookup >>= \case
 
 -- not memoized right now, but could be if we also store the linear function as part of the lookup key
 -- EAC: https://ghc.haskell.org/trac/ghc/ticket/13490
-genTunnHint :: forall gad mon t e r s e' r' s' z zp zq v .
+genTunnHint :: forall gad zq mon t e r s e' r' s' z zp v .
   (MonadReader v mon, MonadState ([Dynamic], [Dynamic]) mon, MonadRandom mon,
    GenSKCtx t r' z v, Typeable (Cyc t r' (LiftOf zp)),
    GenSKCtx t s' z v, Typeable (Cyc t s' (LiftOf zp)),
