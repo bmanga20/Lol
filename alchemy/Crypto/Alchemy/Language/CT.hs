@@ -7,6 +7,9 @@ import Crypto.Lol (Cyc, Factored)
 import Crypto.Lol.Applications.SymmSHE
 import GHC.Exts
 
+infixl 7 *^
+infixl 6  +^
+
 -- | Symantics for ciphertext operations.
 
 class SymCT expr where

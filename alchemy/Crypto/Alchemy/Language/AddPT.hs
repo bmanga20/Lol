@@ -7,6 +7,8 @@ import Crypto.Alchemy.Depth
 import Crypto.Lol (Cyc)
 import GHC.Exts (Constraint)
 
+infixl 6  +#, -#
+
 -- | Symantics for leveled plaintext operations of some depth @d@.
 
 class AddPT expr where

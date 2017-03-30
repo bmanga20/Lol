@@ -8,6 +8,8 @@ import Crypto.Alchemy.Depth
 import Crypto.Lol (Cyc)
 import GHC.Exts
 
+infixl 7 *#
+
 -- | Symantics for leveled plaintext operations of some depth @d@.
 
 class (Applicative mon) => MulPT mon expr where
