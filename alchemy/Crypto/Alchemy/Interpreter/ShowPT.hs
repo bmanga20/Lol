@@ -40,9 +40,9 @@ instance ModSwPT ShowPT where
 
   modSwitchDec (SPT a) = SPT $ \i -> "modSwitchDec $ " ++ a i
 
-instance (Applicative mon) => TunnelPT mon (ShowPT d) where
+instance (Applicative mon) => TunnelPT mon ShowPT where
 
-  type TunnelCtxPT (ShowPT d) t e r s zp = ()
+  type TunnelCtxPT ShowPT d t e r s zp = ()
 
   tunnelPT _ = pure $ \(SPT a) -> SPT $ \i -> "tunnel <FUNC> $ " ++ a i
 

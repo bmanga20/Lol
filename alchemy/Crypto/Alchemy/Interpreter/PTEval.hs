@@ -46,9 +46,9 @@ instance ModSwPT ID where
 
   modSwitchDec = fmap rescaleDec
 
-instance (Applicative mon) => TunnelPT mon (ID d) where
+instance (Applicative mon) => TunnelPT mon ID where
 
-  type TunnelCtxPT (ID d) t e r s zp = (e `Divides` r, e `Divides` s, CElt t zp)
+  type TunnelCtxPT ID d t e r s zp = (e `Divides` r, e `Divides` s, CElt t zp)
 
   tunnelPT = pure . fmap . evalLin
 

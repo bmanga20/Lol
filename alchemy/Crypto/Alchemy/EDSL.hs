@@ -53,8 +53,8 @@ pt2 :: forall a d ptexpr mon t m zp .
 pt2 a b = (\f -> appD (appD f $ lit a) $ lit b) <$> pt1
 
 tunn1 :: forall t r u s zp d mon expr eru eus .
-  (TunnelPTCtx' (expr d) mon t eru r u zp,
-   TunnelPTCtx' (expr d) mon t eus u s zp,
+  (TunnelPTCtx' expr d mon t eru r u zp,
+   TunnelPTCtx' expr d mon t eus u s zp,
    Monad mon, LambdaD expr)
   => Proxy u -> mon (expr ('L d d) (Cyc t r zp -> Cyc t s zp))
 tunn1 _ = do
@@ -121,13 +121,13 @@ type H1' = H1 * F13
 type H2' = H2
 
 -- EAC: This is copied from HomomPRF, but it needs a permanent home.
-type TunnelPTCtx' expr mon t e r s zp =
-  (e ~ FGCD r s,                                   -- type restriction for simplicity
-   TunnelPT mon expr, TunnelCtxPT expr t e r s zp, -- call to tunnelPT
-   e `Divides` r, e `Divides` s, CElt t zp,        -- linearDec
-   ZPP zp, TElt t (ZpOf zp))                       -- crtSet
-tunnelPT' :: forall s mon expr t r zp e . (TunnelPTCtx' expr mon t e r s zp)
-  => mon (expr (Cyc t r zp) -> expr (Cyc t s zp))
+type TunnelPTCtx' expr d mon t e r s zp =
+  (e ~ FGCD r s,                                     -- type restriction for simplicity
+   TunnelPT mon expr, TunnelCtxPT expr d t e r s zp, -- call to tunnelPT
+   e `Divides` r, e `Divides` s, CElt t zp,          -- linearDec
+   ZPP zp, TElt t (ZpOf zp))                         -- crtSet
+tunnelPT' :: forall s mon expr t r zp e d . (TunnelPTCtx' expr d mon t e r s zp)
+  => mon (expr d (Cyc t r zp) -> expr d (Cyc t s zp))
 tunnelPT' =
   let crts = proxy crtSet (Proxy::Proxy e)
       r = proxy totientFact (Proxy::Proxy r)

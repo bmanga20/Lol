@@ -154,13 +154,14 @@ type TunnelCtxPT' ctexpr t e r s r' s' z zp zq zq' gad v =
    RescaleCtxCT ctexpr t r r' zp zq' zq, RescaleCtxCT ctexpr t s s' zp zq zq')
 
 instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
-  => TunnelPT mon (PT2CT m'map zqs zq'map gad v ctexpr d) where
-  type TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr d) t e r s zp =
+  => TunnelPT mon (PT2CT m'map zqs zq'map gad v ctexpr) where
+  type TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d t e r s zp =
     (TunnelCtxPT' ctexpr t e r s (Lookup r m'map) (Lookup s m'map) (LiftOf zp) zp (zqs !! d) (zqs !! (Add1 d)) gad v)
 
-  tunnelPT :: (TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr d) t e r s zp)
-           => Linear t zp e r s -> mon (PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t r zp)
-                                        -> PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t s zp))
+  tunnelPT :: forall d t e r s zp .
+    (TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d t e r s zp)
+    => Linear t zp e r s -> mon (PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t r zp)
+                                 -> PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t s zp))
   tunnelPT f = do
     thint <- genTunnHint @gad @(zqs !! (Add1 d)) f
     return $ p2cmap (rescaleCT . tunnelCT thint . rescaleCT)

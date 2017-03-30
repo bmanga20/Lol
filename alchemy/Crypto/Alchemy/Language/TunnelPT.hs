@@ -4,6 +4,7 @@
 
 module Crypto.Alchemy.Language.TunnelPT where
 
+import Crypto.Alchemy.Depth
 import Crypto.Lol (Cyc, Factored, Linear)
 import GHC.Exts
 
@@ -11,7 +12,7 @@ import GHC.Exts
 
 class (Applicative mon) => TunnelPT mon expr where
 
-  type TunnelCtxPT expr (t :: Factored -> * -> *) (e :: Factored) (r :: Factored) (s :: Factored) zp :: Constraint
+  type TunnelCtxPT expr (d :: Depth) (t :: Factored -> * -> *) (e :: Factored) (r :: Factored) (s :: Factored) zp :: Constraint
 
-  tunnelPT :: (TunnelCtxPT expr t e r s zp)
-           => Linear t zp e r s -> mon (expr (Cyc t r zp) -> expr (Cyc t s zp))
+  tunnelPT :: (TunnelCtxPT expr d t e r s zp)
+           => Linear t zp e r s -> mon (expr d (Cyc t r zp) -> expr d (Cyc t s zp))
