@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE InstanceSigs        #-}
+--{-# LANGUAGE RecordSyntax        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -18,16 +19,12 @@ import Data.Typeable
 -- with the possible exception of rescaleCT itself, if the context is right.
 -- Thus it seems cleaner to work "bottom-up" rather than "top-down".
 
-runDupRescale :: DupRescale expr a -> expr a
-runDupRescale (Ctx _ a) = a
-runDupRescale (NoCtx a) = a
-
 data DupRescale expr a where
   -- indicates that `expr a` is the result of a rescale from b to a
   -- holds the value both pre- and post-rescaling
-  Ctx :: (Typeable b) => expr b -> expr a -> DupRescale expr a
+  Ctx :: (Typeable b) => {ctx :: expr b, runDupRescale :: expr a} -> DupRescale expr a
   -- indicates that `expr a` is *not* the output of rescaleCT.
-  NoCtx :: expr a -> DupRescale expr a
+  NoCtx :: {runDupRescale :: expr a} -> DupRescale expr a
 
 -- map, ignoring context
 dupMap :: (expr a -> expr b) -> DupRescale expr a -> DupRescale expr b
@@ -38,10 +35,10 @@ instance (SymCT expr) => SymCT (DupRescale expr) where
   type AdditiveCtxCT  (DupRescale expr) ct     = (AdditiveCtxCT  expr ct)
   type RingCtxCT      (DupRescale expr) ct     = (RingCtxCT      expr ct)
   type ModSwitchCtxCT (DupRescale expr) ct zp' = (ModSwitchCtxCT expr ct zp')
-  type RescaleCtxCT   (DupRescale expr) t m m' zp zq zq' =
+  type RescaleCtxCT   (DupRescale expr) (CT m zp (Cyc t m' zq)) zq' =
     (Typeable (CT m zp (Cyc t m' zq)),
      Typeable (CT m zp (Cyc t m' zq')),
-     RescaleCtxCT expr t m m' zp zq zq')
+     RescaleCtxCT expr (CT m zp (Cyc t m' zq)) zq')
   type AddPubCtxCT    (DupRescale expr) ct     = (AddPubCtxCT expr ct)
   type MulPubCtxCT    (DupRescale expr) ct     = (MulPubCtxCT expr ct)
   type KeySwitchCtxCT (DupRescale expr) ct zq' gad =
@@ -58,7 +55,7 @@ instance (SymCT expr) => SymCT (DupRescale expr) where
   modSwitchPT = dupMap modSwitchPT
 
   rescaleCT :: forall ct zq' m zp t m' zq .
-    (RescaleCtxCT (DupRescale expr) t m m' zp zq zq', ct ~ CT m zp (Cyc t m' zq))
+    (RescaleCtxCT (DupRescale expr) (CT m zp (Cyc t m' zq)) zq', ct ~ CT m zp (Cyc t m' zq))
             => (DupRescale expr) (CT m zp (Cyc t m' zq')) -> (DupRescale expr) ct
   rescaleCT (Ctx (prev :: expr ct') x) =
     case (eqT :: Maybe (ct' :~: ct)) of

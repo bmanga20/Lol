@@ -24,6 +24,7 @@ import Crypto.Alchemy.Language.ModSwPT ()
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Alchemy.Interpreter.CTEval ()
+import Crypto.Alchemy.Interpreter.DeepSeq ()
 import Crypto.Alchemy.Interpreter.DupRescale
 import Crypto.Alchemy.Interpreter.PTEval
 import Crypto.Alchemy.Interpreter.PT2CT
@@ -89,9 +90,6 @@ main = do
          1.0
          (pt1 @CT @F4 @(Zq 7) @('T 'Z))
   putStrLn $ unSCT x
-
-
-
 
   -- example with rescale de-duplication when tunneling
   -- print the unapplied PT function

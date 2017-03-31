@@ -118,7 +118,7 @@ instance (SymCT ctexpr) => AddPT (PT2CT m'map zqs zq'map gad v ctexpr) where
 
 type RingCtxPT' ctexpr t m m' z zp zq zq' zq'map gad v =
   (RingCtxCT ctexpr (CT m zp (Cyc t m' zq')),
-   RescaleCtxCT ctexpr t m m' zp zq zq',
+   RescaleCtxCT ctexpr (CT m zp (Cyc t m' zq)) zq',
    KeySwitchCtxCT ctexpr (CT m zp (Cyc t m' zq')) (Lookup zq' zq'map) gad,
    GenSKCtx t m' z v,
    KSHintCtx gad t m' z (Lookup zq' zq'map),
@@ -151,7 +151,7 @@ type TunnelCtxPT' ctexpr t e r s r' s' z zp zq zq' gad v =
    GenTunnelInfoCtx   t e r s (e * (r' / r)) r' s' z zp zq' gad,
    GenSKCtx t r' z v, GenSKCtx t s' z v,
    Typeable t, Typeable r', Typeable s', Typeable z, -- bug; see genTunnHint
-   RescaleCtxCT ctexpr t r r' zp zq' zq, RescaleCtxCT ctexpr t s s' zp zq zq')
+   RescaleCtxCT ctexpr (CT r zp (Cyc t r' zq')) zq, RescaleCtxCT ctexpr (CT s zp (Cyc t s' zq)) zq')
 
 instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
   => TunnelPT mon (PT2CT m'map zqs zq'map gad v ctexpr) where

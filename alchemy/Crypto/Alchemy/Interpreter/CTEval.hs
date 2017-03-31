@@ -21,7 +21,7 @@ instance SymCT I where
   type AdditiveCtxCT  I a = (Additive a)
   type RingCtxCT      I a = (Ring a)
   type ModSwitchCtxCT I (CT m zp (Cyc t m' zq)) zp'     = (ModSwitchPTCtx t m' zp zp' zq)
-  type RescaleCtxCT   I t m m' zp zq zq'                = (RescaleCyc (Cyc t) zq' zq, ToSDCtx t m' zp zq')
+  type RescaleCtxCT   I (CT m zp (Cyc t m' zq)) zq'     = (RescaleCyc (Cyc t) zq' zq, ToSDCtx t m' zp zq')
   type AddPubCtxCT    I (CT m zp (Cyc t m' zq))         = (AddPublicCtx t m m' zp zq)
   type MulPubCtxCT    I (CT m zp (Cyc t m' zq))         = (MulPublicCtx t m m' zp zq)
   type KeySwitchCtxCT I (CT m zp (Cyc t m' zq)) zq' gad = (KeySwitchCtx gad t m' zp zq zq')
