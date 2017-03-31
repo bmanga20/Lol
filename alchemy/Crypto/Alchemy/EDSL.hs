@@ -9,6 +9,10 @@
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
+{-# LANGUAGE NoMonoLocalBinds #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE RankNTypes #-}
+
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Crypto.Alchemy.EDSL where
@@ -16,6 +20,7 @@ module Crypto.Alchemy.EDSL where
 import Control.Applicative
 import Control.Monad.Identity
 import Crypto.Alchemy.Depth
+import Crypto.Alchemy.Interpreter.Duplicate
 import Crypto.Alchemy.Language.CT ()
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
@@ -24,7 +29,7 @@ import Crypto.Alchemy.Language.ModSwPT ()
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Alchemy.Interpreter.CTEval ()
-import Crypto.Alchemy.Interpreter.DeepSeq ()
+import Crypto.Alchemy.Interpreter.DeepSeq
 import Crypto.Alchemy.Interpreter.DupRescale
 import Crypto.Alchemy.Interpreter.PTEval
 import Crypto.Alchemy.Interpreter.PT2CT
@@ -103,24 +108,14 @@ main = do
          @Double
          1.0
          (tunn1 @CT @H0 @H1 @H2 @(Zq PP8) @('T 'Z) Proxy)
-  putStrLn $ unSCT y
-  -- compile the up-applied function to CT, then print it out after removing duplicate rescales
-  (y',_) <- compile
-         @'[ '(H0, H0'), '(H1,H1'), '(H2, H2') ]
-         @'[ Zq 7, (Zq 11, Zq 7) ]
-         @'[ '(Zq 7, (Zq 11, Zq 7)), '((Zq 11, Zq 7), (Zq 13, (Zq 11, Zq 7))) ]
-         @TrivGad
-         @Double
-         1.0
-         (tunn1 @CT @H0 @H1 @H2 @(Zq PP8) @('T 'Z) Proxy)
-  putStrLn $ unSCT $ runDupRescale y'
+  -- compile once, interpret with multiple ctexprs!!
+  let (z1,z2) = duplicate $ runDeepSeq y
+  putStrLn $ unSCT z1
+  putStrLn $ unSCT $ runDupRescale z2
 
-
-
-
-type H0 = F4
-type H1 = F2 * F7
-type H2 = F7 * F13
+type H0 = F8
+type H1 = F4 * F7
+type H2 = F2 * F7 * F13
 type H0' = H0 * F7 * F13
 type H1' = H1 * F13
 type H2' = H2

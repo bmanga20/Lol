@@ -5,6 +5,7 @@ module Crypto.Alchemy.Interpreter.DeepSeq where
 
 import Control.DeepSeq
 import Crypto.Alchemy.Language.CT
+import Crypto.Alchemy.Language.Lam
 import Crypto.Lol (Cyc)
 import Crypto.Lol.Applications.SymmSHE (CT, TunnelInfo, KSQuadCircHint)
 
@@ -42,3 +43,7 @@ instance (SymCT ctexpr) => SymCT (DeepSeq ctexpr) where
   keySwitchQuadCT a (DS !b) = a `deepseq` DS $ keySwitchQuadCT a b
 
   tunnelCT a (DS !b) = a `deepseq` DS $ tunnelCT a b
+
+instance (Lambda ctexpr) => Lambda (DeepSeq ctexpr) where
+  lam f = DS $ lam $ runDeepSeq . f . DS
+  app (DS !f) (DS !a) = DS $ app f a
