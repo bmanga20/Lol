@@ -16,7 +16,7 @@ import Crypto.Alchemy.Language.TunnelPT
 unSPT :: ShowPT d a -> String
 unSPT (SPT a) = a 0
 
-data ShowPT (d :: Depth) a = SPT (Int -> String)
+newtype ShowPT (d :: Depth) a = SPT (Int -> String)
 
 instance AddPT (ShowPT) where
   type AddPubCtxPT   ShowPT d a = (Show a)
