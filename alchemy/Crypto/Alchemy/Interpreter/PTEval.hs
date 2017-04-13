@@ -22,24 +22,28 @@ import Crypto.Lol
 -- | Metacircular evaluator with depth.
 newtype ID (d :: Depth) a = ID {unID :: a} deriving (Show, Eq, Functor)
 
+
+lift2 :: (Applicative i) => (a -> b -> c) -> i (ID d a) -> i (ID d' b) -> i (ID d'' c)
+lift2 f a b = ID <$> (f <$> (unID <$> a) <*> (unID <$> b))
+
 -- | Metacircular plaintext symantics.
 instance AddPT ID where
 
-  type AddPubCtxPT   ID d a = (Additive a)
-  type MulPubCtxPT   ID d a = (Ring a)
-  type AdditiveCtxPT ID d a = (Additive a)
+  type AddPubCtxPT   i ID d a = (Additive a, Functor i)
+  --type MulPubCtxPT   ID d a = (Ring a)
+  type AdditiveCtxPT i ID d a = (Additive a, Applicative i)
 
-  a +# b = ID $ unID a + unID b
-  negPT         = fmap negate
-  addPublicPT a = fmap (a+)
-  mulPublicPT a = fmap (a*)
+  (+#) = lift2 (+)
+  --negPT         = fmap negate
+  addPublicPT a = fmap (fmap (a+))
+  --mulPublicPT a = fmap (fmap (a*))
 
-instance (Applicative mon) => MulPT mon ID where
+instance MulPT ID where
 
-  type RingCtxPT ID d a = (Ring a)
+  type RingCtxPT i ID d a = (Ring a, Applicative i)
 
-  (*#) = pure $ \a b -> ID $ unID a * unID b
-
+  (*#) = lift2 (*)
+{-
 instance ModSwPT ID where
 
   type ModSwitchCtxPT ID d (Cyc t m zp) zp' = (RescaleCyc (Cyc t) zp zp', Fact m)
@@ -56,7 +60,7 @@ instance (Applicative mon) => TunnelPT mon ID where
 instance LambdaD ID where
   lamD f   = ID $ unID . f . ID
   appD f a = ID $ unID f $ unID a
-
+-}
 instance Lit (ID d) where
   type LitCtx (ID d) a = ()
   lit = ID

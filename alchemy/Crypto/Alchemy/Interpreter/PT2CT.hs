@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -75,10 +76,10 @@ newtype PT2CT :: [(Factored,Factored)] -- map from plaintext index to ciphertext
            -> * where
   P2C :: {runP2C :: ctexpr (CTType m'map zqs d a)} -> PT2CT m'map zqs zq'map gad v ctexpr d a
 
-p2cmap :: (ctexpr (CTType m'map zqs d a) -> ctexpr (CTType m'map zqs d' b))
-           -> PT2CT m'map zqs zq'map gad v ctexpr d a
-           -> PT2CT m'map zqs zq'map gad v ctexpr d' b
-p2cmap f = P2C . f . runP2C
+p2cmap :: (Functor i) => (ctexpr (CTType m'map zqs d a) -> ctexpr (CTType m'map zqs d' b))
+           -> i (PT2CT m'map zqs zq'map gad v ctexpr d a)
+           -> i (PT2CT m'map zqs zq'map gad v ctexpr d' b)
+p2cmap f a = P2C <$> f <$> runP2C <$> a
 
 -- hidden constructor
 newtype CustomMonad v (rnd :: * -> *) a = CMon {unCMon :: ReaderT v (StateT ([Dynamic],[Dynamic]) rnd) a}
@@ -104,17 +105,17 @@ compile v a = do
 
 instance (SymCT ctexpr) => AddPT (PT2CT m'map zqs zq'map gad v ctexpr) where
 
-  type AddPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
-    (AddPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
-  type MulPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
-    (MulPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
-  type AdditiveCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
-    (AdditiveCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
+  type AddPubCtxPT   i (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (AddPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))), Functor i)
+  --type MulPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+  --  (MulPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
+  type AdditiveCtxPT i (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (AdditiveCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))), Applicative i)
 
-  (P2C a) +# (P2C b) = P2C $ a +^ b
-  negPT = p2cmap negCT
+  a +# b = P2C <$> ((+^) <$> (runP2C <$> a) <*> (runP2C <$> b))
+  --negPT = p2cmap negCT
   addPublicPT = p2cmap . addPublicCT
-  mulPublicPT = p2cmap . mulPublicCT
+  --mulPublicPT = p2cmap . mulPublicCT
 
 type RingCtxPT' ctexpr t m m' z zp zq zq' zq'map gad v =
   (RingCtxCT ctexpr (CT m zp (Cyc t m' zq')),
@@ -125,21 +126,24 @@ type RingCtxPT' ctexpr t m m' z zp zq zq' zq'map gad v =
    Typeable (Cyc t m' z),
    Typeable (KSQuadCircHint gad (Cyc t m' (Lookup zq' zq'map))))
 
-instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
-  => MulPT mon (PT2CT m'map zqs zq'map gad v ctexpr) where
-  type RingCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
-    (RingCtxPT' ctexpr t m (Lookup m m'map) (LiftOf zp) zp (zqs !! d) (zqs !! (Add1 d)) zq'map gad v)
+instance (SymCT ctexpr)
+  => MulPT (PT2CT m'map zqs zq'map gad v ctexpr) where
+  type RingCtxPT i (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
+    (RingCtxPT' ctexpr t m (Lookup m m'map) (LiftOf zp) zp (zqs !! d) (zqs !! (Add1 d)) zq'map gad v,
+     MonadRandom i, MonadReader v i, MonadState ([Dynamic],[Dynamic]) i)
 
   -- EAC: should key switch before the mul, only if necessary. Current signature of *# doesn't allow this...
-  (*#) :: forall rp t m zp zqid zq expr d .
-       (rp ~ Cyc t m zp, zqid ~ Add1 d, zq ~ (zqs !! zqid),
-        expr ~ PT2CT m'map zqs zq'map gad v ctexpr, RingCtxPT expr d (Cyc t m zp))
-       => mon (expr zqid rp -> expr zqid rp -> expr d rp)
-  (*#) = do
-    hint :: KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup zq zq'map)) <-
-      getKSHint (Proxy::Proxy zq'map) (Proxy::Proxy (LiftOf zp)) (Proxy::Proxy zq)
-    return $ \(P2C a) (P2C b) -> P2C $ rescaleCT $ keySwitchQuadCT hint $ a *^ b
-
+  (*#) :: forall rp t m zp zqid zq expr d i j .
+       (rp ~ Cyc t m zp, zqid ~ Add1 d, zq ~ (zqs !! zqid), Applicative j,
+        expr ~ PT2CT m'map zqs zq'map gad v ctexpr, RingCtxPT i expr d (Cyc t m zp))
+       => (i :. j) (expr zqid rp) -> (i :. j) (expr zqid rp) -> (i :. j) (expr d rp)
+  a *# b = do -- in the (i :. j) applicative
+    a' <- runP2C <$> a
+    b' <- runP2C <$> b
+    hint :: KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup zq zq'map)) <- liftJ $ getKSHint (Proxy::Proxy zq'map) (Proxy::Proxy (LiftOf zp)) (Proxy::Proxy zq)
+    return $ P2C $ rescaleCT $ keySwitchQuadCT hint $ a' *^ b'
+    --(\a' b' (hint :: KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup zq zq'map))) -> P2C $ rescaleCT $ keySwitchQuadCT hint $ a' *^ b') <$> (runP2C <$> a) <*> (runP2C <$> b) <*> (liftJ $ getKSHint (Proxy::Proxy zq'map) (Proxy::Proxy (LiftOf zp)) (Proxy::Proxy zq))
+{-
 instance (SymCT ctexpr) => ModSwPT (PT2CT m'map zqs zq'map gad v ctexpr) where
   type ModSwitchCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) zp' =
     (ModSwitchCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))) zp')
@@ -165,11 +169,7 @@ instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic
   tunnelPT f = do
     thint <- genTunnHint @gad @(zqs !! (Add1 d)) f
     return $ p2cmap (rescaleCT . tunnelCT thint . rescaleCT)
-
-instance (Lambda ctexpr) => LambdaD (PT2CT m'map zqs zq'map gad v ctexpr) where
-  lamD f = P2C $ lam $ runP2C . f . P2C
-  appD = p2cmap . app . runP2C
-
+-}
 ---- Monad helper functions
 
 -- retrieve the scaled variance parameter from the Reader
