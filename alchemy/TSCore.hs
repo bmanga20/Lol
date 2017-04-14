@@ -273,14 +273,30 @@ stage environment h.
 -- The explicit environment (i :. j) makes it easy to to weakens,
 -- weakening by arbitrary amounts.
 
+-- newtype (i :. j) a = J{unJ:: i (j a)}
 lam :: (Applicative m, AppLiftable i, SSym repr, LamPure repr) =>
        (forall j. AppLiftable j =>
         (i :. j) (repr a) -> (m :. (i :. j)) (repr b))
        -> (m :. i) (repr (a->b))
-lam f = fmap lamS (J . fmap unJ . unJ $ f  (J . pure $ v))
+lam f = fmap lamS (J $ fmap unJ $ unJ $ f  (J $ pure $ v))
  where
  -- instantiate applicative j to be a Reader: repr a -> w
  v = \repra -> repra                    -- bound variable
+
+
+
+-- j ~ ((->) (repr a))
+-- v :: repr a -> repr a
+-- v ~ j (repr a)
+
+-- pure v :: i (j (repr a))
+-- J $ pure v :: (i :. j) (repr a)
+-- unJ $ f ... :: m ((i :. j) (repr b))
+-- fmap unJ $ unJ $ f ... :: m (i (j (repr b)))
+-- J $ fmap unJ $ unJ $ f ... :: (m :. i) (j (repr b)) ~ (m :. i) (repr a -> repr b)
+-- fmap lamS ... :: (m :. i) (repr (a -> b))
+
+
 
 -- Make a variable an expression
 var :: Applicative m => i (repr a) -> (m :. i) (repr a)

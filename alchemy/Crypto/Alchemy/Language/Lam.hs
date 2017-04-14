@@ -2,7 +2,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Crypto.Alchemy.Language.Lam where
 
@@ -26,17 +28,19 @@ class LambdaD expr where
 
 -- from TSCore.hs
 -- a simpler type is possible if we don't need let-insertion across binders
-lamPT :: (Applicative m, AppLiftable i, Lambda repr) =>
+lamPT :: (Applicative m, AppLiftable i, LambdaD repr) =>
        (forall j. AppLiftable j =>
-        (i :. j) (repr a) -> (m :. (i :. j)) (repr b))
-       -> (m :. i) (repr (a->b))
-lamPT f = fmap lam $ J . fmap unJ . unJ $ f  $ J . pure $ id
+        (i :. j) (repr (da :: Depth) a) -> (m :. (i :. j)) (repr (db :: Depth) b))
+       -> (m :. i) (repr ('L da db) (a->b))
+lamPT f = undefined --fmap lamD $ J . fmap unJ . unJ $ f  $ J . pure $ id
 
 appPT :: (Applicative m, Lambda repr) => m (repr (a->b)) -> m (repr a) -> m (repr b)
 appPT f x = app <$> f <*> x
 
 
-
+vr :: forall i j m repr a. (Applicative m) =>
+      Extends (m :. i) (m :. j) => i (repr a) -> (m :. j) (repr a)
+vr = (weakens :: (m :. i) (repr a) -> (m :. j) (repr a)) . var
 
 
 -- EAC: copied straight from TSCore.hs
