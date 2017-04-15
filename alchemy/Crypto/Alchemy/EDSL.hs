@@ -43,6 +43,79 @@ import Crypto.Lol.Types.ZPP -- EAC: I shouldn't need to explicitly import this..
 
 import Data.Type.Natural
 
+
+pt1 :: (a ~ Cyc t m' zp, Applicative i,
+        AddPT expr, AdditiveCtxPT m expr (Add1 d) a,
+        MulPT expr, RingCtxPT m expr d a) => (m :. i) (expr (Add1 d) a) -> (m :. i) (expr (Add1 d) a) -> (m :. i) (expr d a)
+pt1 x y = x *# (x +# y)
+
+lam1 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b))
+    -> (m :. i) (expr ('L d1 d2) (a -> b))
+lam1 f = lamPT $ \x -> (f $ var x)
+
+lam2 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c))
+    -> (m :. i) (expr ('L d1 ('L d2 d3)) (a -> b -> c))
+lam2 f = lamPT $ \x -> lamPT $ \y ->
+  let x' = var $ weaken x   -- embed from  i . j1       to m . (i . (j1 . j2))
+      y' = var $ jassocp2 y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
+      z  = f x' y'
+  in mapJ2 jassocm2 z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
+
+lam3 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 d4))) (a -> b -> c -> d))
+lam3 f = lamPT $ \x -> lamPT $ \y -> lamPT $ \z ->
+  let x' = var $ mapJ2 weaken $ weaken x -- embed from  i . j1              to m . (i . (j1 . (j2 . j3)))
+      y' = var $ jassocp2 $ weaken y     -- embed from (i . j1) . j2        to m . (i . (j1 . (j2 . j3)))
+      z' = var $ jassocp2 $ jassocp2 z   -- embed from ((i . j1) . j2) . j3 to m . (i . (j1 . (j2 . j3)))
+      w = f x' y' z'
+  in mapJ2 (jassocm2 . jassocm2) w
+
+pt1' :: (a ~ Cyc t m' zp, Applicative i, Applicative m, AppLiftable i, LambdaD expr,
+         AddPT expr, AdditiveCtxPT m expr (Add1 d) a,
+         MulPT expr, RingCtxPT m expr d a)
+     => (m :. i) (expr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
+pt1' = lam2 pt1
+
+{-
+mapJ2 :: Functor m => (i a -> j a) -> (m :. i) a -> (m :. j) a
+
+lamPT :: (forall j. (i :. j) (repr (da :: Depth) a) -> (m :. (i :. j)) (repr (db :: Depth) b))
+       -> (m :. i) (repr ('L da db) (a->b))
+
+weaken :: (m :. i) (repr a) -> (m :. (i :. j)) (repr a)
+
+var :: Applicative m => i (repr a) -> (m :. i) (repr a)
+
+jassocp2 :: Functor m => ((m :. i1) :. i2) a -> (m :. (i1 :. i2)) a
+
+jassocm2 :: Functor m => (m :. (i1 :. i2)) a -> ((m :. i1) :. i2) a
+
+liftJ :: (Applicative m, Applicative i) => m a -> (m :. i) a
+-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-
 data Var a = Var {unVar :: a}
 data Exp a = Exp {unExp :: a}
 
@@ -96,7 +169,7 @@ pt3 :: forall a t m' zp expr m i d .
 pt3 = lamV $ \(x :: (i :. j1) (expr (Add1 d) a)) ->
   Exp $ lamV $ \(y :: ((i :. j1) :. j2) (expr (Add1 d) a)) -> x *### (x +### y)
 
-
+-}
 
 
 
@@ -104,7 +177,7 @@ pt3 = lamV $ \(x :: (i :. j1) (expr (Add1 d) a)) ->
 
 --(+^) :: (AddPT expr, AdditiveCtxPT i expr d a) =>
 --  i (expr d a) -> j (expr d a) -> expr d a
-
+{-
 (+##) :: forall i j k m repr a t m' zp (d :: Depth) .
   (AddPT repr, AdditiveCtxPT m repr d a, Applicative k,
    Extends i (m :. k), Extends j (m :. k), a ~ Cyc t m' zp)
@@ -149,7 +222,7 @@ pt2 :: forall a t m' zp expr m d i j k . (a ~ Cyc t m' zp, Ring a, AddPT expr, M
         Extends i (m :. k), Extends j (m :. k), Applicative k)
   => i (expr (Add1 d) a) -> j (expr (Add1 d) a) -> (m :. k) (expr d a)
 pt2 x y = addPub 2 $ (x *## (x +## y :: (m :. k) (expr (Add1 d) a)) :: (m :. k) (expr d a))
-{-
+
 pt2' :: (a ~ Cyc t m' zp, Ring a, AddPT expr, MulPT expr,
         AddPubCtxPT m expr d a, AdditiveCtxPT m expr (Add1 d) a, RingCtxPT m expr d a,
         Applicative x, Applicative (yi :. yj), Applicative (yi :. yj), Applicative m, Extends x yi, Extends (yi :. yj) (m :. (yi :. yj)))
