@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds           #-}
+--{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -49,36 +49,14 @@ pt1 :: (a ~ Cyc t m' zp, Applicative i,
         MulPT expr, RingCtxPT m expr d a) => (m :. i) (expr (Add1 d) a) -> (m :. i) (expr (Add1 d) a) -> (m :. i) (expr d a)
 pt1 x y = x *# (x +# y)
 
-lam1 :: (Applicative m, AppLiftable i, LambdaD expr) =>
-  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b))
-    -> (m :. i) (expr ('L d1 d2) (a -> b))
-lam1 f = lamPT $ \x -> (f $ var x)
 
-lam2 :: (Applicative m, AppLiftable i, LambdaD expr) =>
-  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c))
-    -> (m :. i) (expr ('L d1 ('L d2 d3)) (a -> b -> c))
-lam2 f = lamPT $ \x -> lamPT $ \y ->
-  let x' = var $ weaken x   -- embed from  i . j1       to m . (i . (j1 . j2))
-      y' = var $ jassocp2 y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
-      z  = f x' y'
-  in mapJ2 jassocm2 z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
 
-lam3 :: (Applicative m, AppLiftable i, LambdaD expr) =>
-  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d))
-    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 d4))) (a -> b -> c -> d))
-lam3 f = lamPT $ \x -> lamPT $ \y -> lamPT $ \z ->
-  let x' = var $ mapJ2 weaken $ weaken x -- embed from  i . j1              to m . (i . (j1 . (j2 . j3)))
-      y' = var $ jassocp2 $ weaken y     -- embed from (i . j1) . j2        to m . (i . (j1 . (j2 . j3)))
-      z' = var $ jassocp2 $ jassocp2 z   -- embed from ((i . j1) . j2) . j3 to m . (i . (j1 . (j2 . j3)))
-      w = f x' y' z'
-  in mapJ2 (jassocm2 . jassocm2) w
 
-pt1' :: (a ~ Cyc t m' zp, Applicative i, Applicative m, AppLiftable i, LambdaD expr,
-         AddPT expr, AdditiveCtxPT m expr (Add1 d) a,
-         MulPT expr, RingCtxPT m expr d a)
-     => (m :. i) (expr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
-pt1' = lam2 pt1
-
+{-
+(i . j1) . j2
+weakenL
+((i . j1) . j2) . (j3 . j4))
+-}
 {-
 mapJ2 :: Functor m => (i a -> j a) -> (m :. i) a -> (m :. j) a
 
@@ -95,6 +73,14 @@ jassocm2 :: Functor m => (m :. (i1 :. i2)) a -> ((m :. i1) :. i2) a
 
 liftJ :: (Applicative m, Applicative i) => m a -> (m :. i) a
 -}
+
+pt1' :: (a ~ Cyc t m' zp, Applicative i, Applicative m, AppLiftable i, LambdaD expr,
+         AddPT expr, AdditiveCtxPT m expr (Add1 d) a,
+         MulPT expr, RingCtxPT m expr d a)
+     => (m :. i) (expr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
+pt1' = lam2 pt1
+
+
 
 
 

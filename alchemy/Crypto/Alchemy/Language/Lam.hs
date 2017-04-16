@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Crypto.Alchemy.Language.Lam where
 
@@ -26,6 +27,139 @@ class LambdaD expr where
             (i :. j) (expr da a) -> (m :. (i :. j)) (expr db b))
            -> (m :. i) (expr ('L da db) (a->b))
 
+-- lam* first weakens repeatedly, then reassociates in one go
+lam1 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b))
+    -> (m :. i) (expr ('L d1 d2) (a -> b))
+lam1 f = lamPT $ f . var
+
+lam2 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c))
+    -> (m :. i) (expr ('L d1 ('L d2 d3)) (a -> b -> c))
+lam2 f = lamPT $ \x -> lamPT $ \y ->
+  let reassoc = assocLR
+      x' = reassoc $ weakenL x   -- embed from  i . j1       to m . (i . (j1 . j2))
+      y' = reassoc y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
+      z  = f (var x') (var y')
+  in mapJ2 assocRL z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
+
+lam3 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 d4))) (a -> b -> c -> d))
+lam3 f = lamPT $ \x -> lamPT $ \y -> lamPT $ \z ->
+  let reassoc = assocLR . assocLR
+      x' = reassoc $ weakenL $ weakenL x -- embed from  i . j1              to m . (i . (j1 . (j2 . j3)))
+      y' = reassoc $ weakenL y     -- embed from (i . j1) . j2        to m . (i . (j1 . (j2 . j3)))
+      z' = reassoc z   -- embed from ((i . j1) . j2) . j3 to m . (i . (j1 . (j2 . j3)))
+      w = f (var x') (var y') (var z')
+  in mapJ2 (assocRL . assocRL) w
+
+lam4 :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d) -> (m :. (i :. j)) (expr d5 e))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 ('L d4 d5)))) (a -> b -> c -> d -> e))
+lam4 f = lamPT $ \x -> lamPT $ \y -> lamPT $ \z -> lamPT $ \w ->
+  let reassoc = assocLR . assocLR . assocLR
+      x' = reassoc $ weakenL $ weakenL $ weakenL x -- embed from  i . j1              to m . (i . (j1 . (j2 . (j3 . j4)))
+      y' = reassoc $ weakenL $ weakenL y     -- embed from (i . j1) . j2        to m . (i . (j1 . (j2 . j3)))
+      z' = reassoc $ weakenL z   -- embed from ((i . j1) . j2) . j3 to m . (i . (j1 . (j2 . j3)))
+      w' = reassoc w
+      u = f (var x') (var y') (var z') (var w')
+  in mapJ2 (assocRL . assocRL . assocRL) u
+
+-- lam*' weakens in one go, then reassociates repeatedly (same sigs as corresponding lam* function)
+lam1' :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b))
+    -> (m :. i) (expr ('L d1 d2) (a -> b))
+lam1' f = lamPT $ f . var
+
+lam2' :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c))
+    -> (m :. i) (expr ('L d1 ('L d2 d3)) (a -> b -> c))
+lam2' f = lamPT $ \x -> lamPT $ \y ->
+  let x' = assocLR $ weakenL x   -- embed from  i . j1       to m . (i . (j1 . j2))
+      y' = assocLR y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
+      z  = f (var x') (var y')
+  in mapJ2 assocRL z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
+
+lam3' :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 d4))) (a -> b -> c -> d))
+lam3' f = lamPT $ \x -> lamPT $ \y -> lamPT $ \z ->
+  let x' = assocLR $ weakenL x -- embed from  i . j1              to m . (i . (j1 . (j2 . j3)))
+      y' = assocLR $ assocLR $ weakenL y     -- embed from (i . j1) . j2        to m . (i . (j1 . (j2 . j3)))
+      z' = assocLR $ assocLR z   -- embed from ((i . j1) . j2) . j3 to m . (i . (j1 . (j2 . j3)))
+      w = f (var x') (var y') (var z')
+  in mapJ2 (assocRL . assocRL) w
+
+lam4' :: (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d) -> (m :. (i :. j)) (expr d5 e))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 ('L d4 d5)))) (a -> b -> c -> d -> e))
+lam4' f = lamPT $ \x -> lamPT $ \y -> lamPT $ \z -> lamPT $ \w ->
+  let x' = assocLR $ weakenL x -- embed from  i . j1              to m . (i . (j1 . (j2 . (j3 . j4)))
+      y' = assocLR $ assocLR $ weakenL y     -- embed from (i . j1) . j2        to m . (i . (j1 . (j2 . j3)))
+      z' = assocLR $ assocLR $ assocLR $ weakenL z   -- embed from ((i . j1) . j2) . j3 to m . (i . (j1 . (j2 . j3)))
+      w' = assocLR $ assocLR $ assocLR $ w
+      u = f (var x') (var y') (var z') (var w')
+  in mapJ2 (assocRL . assocRL . assocRL) u
+
+
+
+--Expected type: (:.) m (i'       :. j1) (expr d2 b) → (:.) m (i'       :. j1) (expr d3 c) → (:.) m (i'       :. j1) (expr d4 d)
+--Actual   type: (:.) m ((i :. j) :. j1) (expr d2 b) → (:.) m ((i :. j) :. j1) (expr d3 c) → (:.) m ((i :. j) :. j1) (expr d4 d)
+
+-- lam*Rec are very simple and make recursive calls
+lam2Rec :: forall m i expr d1 d2 d3 a b c . (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall j' j . (Applicative j) => (m :. ((i :. j') :. j)) (expr d1 a) -> (m :. ((i :. j') :. j)) (expr d2 b) -> (m :. ((i :. j') :. j)) (expr d3 c))
+    -> (m :. i) (expr ('L d1 ('L d2 d3)) (a -> b -> c))
+lam2Rec f = lamPT $ \x -> lam1 $ f (var $ weakenL x)
+
+lam3Rec :: forall m i expr d1 d2 d3 d4 a b c d . (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall i' j' j . (Applicative j, i' ~ (i :. j')) => (m :. (i' :. j)) (expr d1 a) -> (m :. (i' :. j)) (expr d2 b) -> (m :. (i' :. j)) (expr d3 c) -> (m :. (i' :. j)) (expr d4 d))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 d4))) (a -> b -> c -> d))
+lam3Rec f = lamPT $ \x -> lam2 $ f (var $ weakenL x)
+
+lam4Rec :: forall m i expr d1 d2 d3 d4 d5 a b c d e . (Applicative m, AppLiftable i, LambdaD expr) =>
+  (forall i' j' j . (Applicative j, i' ~ (i :. j')) => (m :. (i' :. j)) (expr d1 a) -> (m :. (i' :. j)) (expr d2 b) -> (m :. (i' :. j)) (expr d3 c) -> (m :. (i' :. j)) (expr d4 d) -> (m :. (i' :. j)) (expr d5 e))
+    -> (m :. i) (expr ('L d1 ('L d2 ('L d3 ('L d4 d5)))) (a -> b -> c -> d -> e))
+lam4Rec f = lamPT $ \x -> lam3 $ f (var $ weakenL x)
+
+
+
+
+
+
+
+weakenR :: (Applicative m,Applicative i,Applicative j) => (m :. i) (repr a) -> (m :. (i :. j)) (repr a)
+weakenR = weaken
+
+weakenL :: (Applicative m,Applicative i,Applicative j) => (m :. i) (repr a) -> ((m :. i) :. j) (repr a)
+weakenL = liftJ
+
+assocRL :: Functor m => (m :. (i1 :. i2)) a -> ((m :. i1) :. i2) a
+assocRL = jassocm2
+
+assocLR :: Functor m => ((m :. i1) :. i2) a -> (m :. (i1 :. i2)) a
+assocLR = jassocp2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- from TSCore.hs
 -- a simpler type is possible if we don't need let-insertion across binders
 lamPT :: (Applicative m, AppLiftable i, LambdaD repr) =>
@@ -33,6 +167,21 @@ lamPT :: (Applicative m, AppLiftable i, LambdaD repr) =>
         (i :. j) (repr (da :: Depth) a) -> (m :. (i :. j)) (repr (db :: Depth) b))
        -> (m :. i) (repr ('L da db) (a->b))
 lamPT f = undefined --fmap lamD $ J . fmap unJ . unJ $ f  $ J . pure $ id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 appPT :: (Applicative m, Lambda repr) => m (repr (a->b)) -> m (repr a) -> m (repr b)
 appPT f x = app <$> f <*> x
