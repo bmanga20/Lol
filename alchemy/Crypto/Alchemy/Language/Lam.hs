@@ -21,10 +21,16 @@ class Lambda expr where
   app :: expr (a -> b) -> expr a -> expr b
 
 class LambdaD expr where
-  lamD :: (Applicative i, Functor m) => (forall j . (Applicative j) => (i :. j) (expr da a) -> (m :. (i :. j)) (expr db b))
-          -> (m :. i) (expr ('L da db) (a->b))
+  lamD :: (Functor m, Applicative i) => (forall j . (Applicative j) => (expr (i :. j) da a) -> (expr (m :. (i :. j)) db b))
+          -> (expr (m :. i) ('L da db) (a->b))
 
-  appD :: (Applicative m) => m (expr ('L da db) (a->b)) -> m (expr da a) -> m (expr db b)
+  appD :: (Applicative m) => (expr m ('L da db) (a->b)) -> (expr m da a) -> (expr m db b)
+
+lam' :: (Functor m, Applicative i, Lambda expr) =>
+  (forall j . (Applicative j) => (i :. j) (expr a) -> (m :. (i :. j)) (expr b))
+    -> (m :. i) (expr (a -> b))
+lam' f = fmap lam (J $ fmap unJ $ unJ $ f  (J $ pure id))
+
 
 -- lam* first weakens repeatedly, then reassociates in one go
 lam1 :: (Applicative m, Applicative i, LambdaD expr) =>
@@ -41,7 +47,7 @@ lam2 f = lamD $ \x -> lamD $ \y ->
       y' = reassoc y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
       z  = f (var x') (var y')
   in mapJ2 assocRL z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
-
+{-
 lam3 :: (Applicative m, Applicative i, LambdaD expr) =>
   (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d))
     -> (m :. i) (expr ('L d1 ('L d2 ('L d3 d4))) (a -> b -> c -> d))
@@ -64,6 +70,9 @@ lam4 f = lamD $ \x -> lamD $ \y -> lamD $ \z -> lamD $ \w ->
       w' = reassoc w
       u = f (var x') (var y') (var z') (var w')
   in mapJ2 (assocRL . assocRL . assocRL) u
+-}
+
+
 {-
 -- lam*' weakens in one go, then reassociates repeatedly (same sigs as corresponding lam* function)
 lam1' :: (Applicative m, AppLiftable i, LambdaD expr) =>

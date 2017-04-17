@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Crypto.Alchemy.Language.MulPT where
 
@@ -16,10 +16,10 @@ infixl 7 *#
 
 class MulPT expr where
 
-  type RingCtxPT (i :: * -> *) expr (d :: Depth) a :: Constraint
+  type RingCtxPT expr (d :: Depth) a :: Constraint
 
   -- | Plaintext multiplication.  Inputs must be one depth less than
   -- output (so we can't use 'Ring').
-  (*#) :: (RingCtxPT i expr d a, a ~ Cyc t m zp, Applicative j) =>
+  (*#) :: (RingCtxPT expr d a, a ~ Cyc t m zp) =>
           -- CJP: generalize input depths?
-          (i :. j) (expr (Add1 d) a) -> (i :. j) (expr (Add1 d) a) -> (i :. j) (expr d a)
+          (expr (Add1 d) a) -> (expr (Add1 d) a) -> (expr d a)

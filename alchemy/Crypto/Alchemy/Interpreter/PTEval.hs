@@ -20,27 +20,26 @@ import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Lol
 
 -- | Metacircular evaluator with depth.
-newtype ID (d :: Depth) a = ID {unID :: a} deriving (Show, Eq, Functor)
+newtype ID i (d :: Depth) a = ID {unID :: i a} deriving (Show, Eq, Functor)
 
-
-lift2 :: (Applicative i) => (a -> b -> c) -> i (ID d a) -> i (ID d' b) -> i (ID d'' c)
-lift2 f a b = ID <$> (f <$> (unID <$> a) <*> (unID <$> b))
+lift2 :: (Applicative i) => (a -> b -> c) -> (ID i d a) -> (ID i d' b) -> (ID i d'' c)
+lift2 f a b = ID $ f <$> (unID a) <*> (unID b)
 
 -- | Metacircular plaintext symantics.
-instance AddPT ID where
+instance AddPT (ID i) where
 
-  type AddPubCtxPT   i ID d a = (Additive a, Functor i)
+  type AddPubCtxPT   (ID i) d a = (Additive a, Functor i)
   --type MulPubCtxPT   ID d a = (Ring a)
-  type AdditiveCtxPT i ID d a = (Additive a, Applicative i)
+  type AdditiveCtxPT (ID i) d a = (Additive a, Applicative i)
 
   (+#) = lift2 (+)
   --negPT         = fmap negate
-  addPublicPT a = fmap (fmap (a+))
+  addPublicPT a = fmap (a+)
   --mulPublicPT a = fmap (fmap (a*))
 
-instance MulPT ID where
+instance MulPT (ID i) where
 
-  type RingCtxPT i ID d a = (Ring a, Applicative i)
+  type RingCtxPT (ID i) d a = (Ring a, Applicative i)
 
   (*#) = lift2 (*)
 {-
@@ -61,6 +60,6 @@ instance LambdaD ID where
   lamD f   = ID $ unID . f . ID
   appD f a = ID $ unID f $ unID a
 -}
-instance Lit (ID d) where
-  type LitCtx (ID d) a = ()
-  lit = ID
+instance (Applicative i) => Lit (ID i d) where
+  type LitCtx (ID i d) a = ()
+  lit = ID . pure

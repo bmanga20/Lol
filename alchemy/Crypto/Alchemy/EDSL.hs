@@ -42,22 +42,22 @@ import Crypto.Lol.Types.ZPP -- EAC: I shouldn't need to explicitly import this..
 
 import Data.Type.Natural
 
-pt1 :: forall t m' zp d ptexpr m i a .
-  (a ~ Cyc t m' zp, Applicative i,
-   AddPT ptexpr, MulPT ptexpr,
-   AddPubCtxPT m ptexpr d a, AdditiveCtxPT m ptexpr (Add1 d) a,
-   RingCtxPT m ptexpr d a, Ring a)
-  => (m :. i) (ptexpr (Add1 d) a) -> (m :. i) (ptexpr (Add1 d) a) -> (m :. i) (ptexpr d a)
+pt1 :: forall t m zp d ptexpr ptexpr' i a .
+  (a ~ Cyc t m zp, ptexpr' ~ ptexpr i,
+   AddPT ptexpr', MulPT ptexpr',
+   AddPubCtxPT ptexpr' d a, AdditiveCtxPT ptexpr' (Add1 d) a,
+   RingCtxPT ptexpr' d a, Ring a)
+  => (ptexpr' (Add1 d) a) -> (ptexpr' (Add1 d) a) -> (ptexpr' d a)
 pt1 a b = addPublicPT 2 $ a *# (a +# b)
 
-pt1' :: forall t m' zp d ptexpr m i a .
-  (a ~ Cyc t m' zp, Applicative i, Applicative m,
-   AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr,
-   AddPubCtxPT m ptexpr d a, AdditiveCtxPT m ptexpr (Add1 d) a,
-   RingCtxPT m ptexpr d a, Ring a)
-  => (m :. i) (ptexpr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
+pt1' :: forall t m zp d ptexpr ptexpr' m' i a .
+  (a ~ Cyc t m' zp, ptexpr' ~ ptexpr i,
+   AddPT ptexpr', MulPT ptexpr', LambdaD ptexpr,
+   AddPubCtxPT ptexpr' d a, AdditiveCtxPT ptexpr' (Add1 d) a,
+   RingCtxPT ptexpr' d a, Ring a)
+  => (ptexpr (m :. i) ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
 pt1' = lam2 $ pt1
-
+{-
 pt1'' :: forall t m' zp d ptexpr m i a .
   (a ~ Cyc t m' zp, Applicative i, Applicative m,
    AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr, Lit (ptexpr (Add1 d)),
@@ -65,7 +65,7 @@ pt1'' :: forall t m' zp d ptexpr m i a .
    RingCtxPT m ptexpr d a, Ring a, LitCtx (ptexpr (Add1 d)) a)
   => a -> a -> (m :. i) (ptexpr d a)
 pt1'' a b = appD (appD pt1' (pure $ lit a)) (pure $ lit b)
-
+-}
 {-
 (TunnelPTCtx' expr d mon t eru r u zp,
  TunnelPTCtx' expr d mon t eus u s zp,
