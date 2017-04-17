@@ -170,6 +170,65 @@ instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic
     thint <- genTunnHint @gad @(zqs !! (Add1 d)) f
     return $ p2cmap (rescaleCT . tunnelCT thint . rescaleCT)
 -}
+
+instance (Lambda ctexpr) => LambdaD (PT2CT m'map zqs zq'map gad v ctexpr) where
+  lamD f =
+    let f' = J $ fmap unJ $ unJ $ f  $ J $ pure $ id
+    in P2C <$> (fmap lam $ (\g -> runP2C . g . P2C) <$> f')
+
+  appD f x = P2C <$> (app <$> (runP2C <$> f) <*> (runP2C <$> x))
+
+{-  :: (forall j. AppLiftable j => (i :. j) (repr da a) -> (m :. (i :. j)) (repr db b))
+          -> (m :. i) (repr ('L da db) (a->b))
+}
+j ~ ((->) ctexpr a)
+id :: (ctexpr a -> ctexpr a) ~ j (ctexpr a)
+pure id :: i (j (ctexpr a))
+J $ .. :: (i :. j) (ctexpr a)
+unJ $ f ... :: m ((i :. j) (ctexpr ))
+-}
+
+{-
+-- newtype (i :. j) a = J{unJ:: i (j a)}
+lam :: (Applicative m, AppLiftable i, SSym repr, LamPure repr) =>
+       (forall j. AppLiftable j =>
+        (i :. j) (repr a) -> (m :. (i :. j)) (repr b))
+       -> (m :. i) (repr (a->b))
+lam f = fmap lamS (J $ fmap unJ $ unJ $ f  (J $ pure $ v))
+ where
+ -- instantiate applicative j to be a Reader: repr a -> w
+ v = \repra -> repra                    -- bound variable
+
+
+
+-- j ~ ((->) (repr a))
+-- v :: repr a -> repr a
+-- v ~ j (repr a)
+
+-- pure v :: i (j (repr a))
+-- J $ pure v :: (i :. j) (repr a)
+-- unJ $ f ... :: m ((i :. j) (repr b))
+-- fmap unJ $ unJ $ f ... :: m (i (j (repr b)))
+-- J $ fmap unJ $ unJ $ f ... :: (m :. i) (j (repr b)) ~ (m :. i) (repr a -> repr b)
+-- fmap lamS ... :: (m :. i) (repr (a -> b))
+
+
+
+
+
+-- a simpler type is possible if we don't need let-insertion across binders
+lamPT :: (Applicative m, AppLiftable i, Lambda repr) =>
+       (forall j. AppLiftable j =>
+        (i :. j) (repr da a) -> (m :. (i :. j)) (repr db b))
+       -> (m :. i) (repr ('L da db) (a->b))
+lamPT f = fmap lam $ J . fmap unJ . unJ $ f  $ J . pure $ id
+-}
+
+
+
+
+
+
 ---- Monad helper functions
 
 -- retrieve the scaled variance parameter from the Reader

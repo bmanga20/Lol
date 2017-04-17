@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
---{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -43,224 +42,30 @@ import Crypto.Lol.Types.ZPP -- EAC: I shouldn't need to explicitly import this..
 
 import Data.Type.Natural
 
+pt1 :: forall t m' zp d ptexpr m i a .
+  (a ~ Cyc t m' zp, Applicative i,
+   AddPT ptexpr, MulPT ptexpr,
+   AddPubCtxPT m ptexpr d a, AdditiveCtxPT m ptexpr (Add1 d) a,
+   RingCtxPT m ptexpr d a, Ring a)
+  => (m :. i) (ptexpr (Add1 d) a) -> (m :. i) (ptexpr (Add1 d) a) -> (m :. i) (ptexpr d a)
+pt1 a b = addPublicPT 2 $ a *# (a +# b)
 
-pt1 :: (a ~ Cyc t m' zp, Applicative i,
-        AddPT expr, AdditiveCtxPT m expr (Add1 d) a,
-        MulPT expr, RingCtxPT m expr d a) => (m :. i) (expr (Add1 d) a) -> (m :. i) (expr (Add1 d) a) -> (m :. i) (expr d a)
-pt1 x y = x *# (x +# y)
+pt1' :: forall t m' zp d ptexpr m i a .
+  (a ~ Cyc t m' zp, Applicative i, Applicative m,
+   AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr,
+   AddPubCtxPT m ptexpr d a, AdditiveCtxPT m ptexpr (Add1 d) a,
+   RingCtxPT m ptexpr d a, Ring a)
+  => (m :. i) (ptexpr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
+pt1' = lam2 $ pt1
 
+pt1'' :: forall t m' zp d ptexpr m i a .
+  (a ~ Cyc t m' zp, Applicative i, Applicative m,
+   AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr, Lit (ptexpr (Add1 d)),
+   AddPubCtxPT m ptexpr d a, AdditiveCtxPT m ptexpr (Add1 d) a,
+   RingCtxPT m ptexpr d a, Ring a, LitCtx (ptexpr (Add1 d)) a)
+  => a -> a -> (m :. i) (ptexpr d a)
+pt1'' a b = appD (appD pt1' (pure $ lit a)) (pure $ lit b)
 
-
-
-{-
-(i . j1) . j2
-weakenL
-((i . j1) . j2) . (j3 . j4))
--}
-{-
-mapJ2 :: Functor m => (i a -> j a) -> (m :. i) a -> (m :. j) a
-
-lamPT :: (forall j. (i :. j) (repr (da :: Depth) a) -> (m :. (i :. j)) (repr (db :: Depth) b))
-       -> (m :. i) (repr ('L da db) (a->b))
-
-weaken :: (m :. i) (repr a) -> (m :. (i :. j)) (repr a)
-
-var :: Applicative m => i (repr a) -> (m :. i) (repr a)
-
-jassocp2 :: Functor m => ((m :. i1) :. i2) a -> (m :. (i1 :. i2)) a
-
-jassocm2 :: Functor m => (m :. (i1 :. i2)) a -> ((m :. i1) :. i2) a
-
-liftJ :: (Applicative m, Applicative i) => m a -> (m :. i) a
--}
-
-pt1' :: (a ~ Cyc t m' zp, Applicative i, Applicative m, AppLiftable i, LambdaD expr,
-         AddPT expr, AdditiveCtxPT m expr (Add1 d) a,
-         MulPT expr, RingCtxPT m expr d a)
-     => (m :. i) (expr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
-pt1' = lam2 pt1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{-
-data Var a = Var {unVar :: a}
-data Exp a = Exp {unExp :: a}
-
-lamV :: (Applicative m, AppLiftable i, LambdaD repr) =>
-       (forall j. AppLiftable j => Var ((i :. j) (repr (da :: Depth) a)) -> Exp ((m :. (i :. j)) (repr (db :: Depth) b)))
-       -> (m :. i) (repr ('L da db) (a->b))
-lamV f = lamPT (unExp . f . Var)
-
-type family BinFunc a b c where
-  BinFunc (Var (i (repr d a))) (Exp (j (repr d' a))) (Exp (j (repr d'' a))) = (j (repr d a) -> j (repr d' a) -> j (repr d'' a))
-  BinFunc (Exp (j (repr d a))) (Var (i (repr d' a))) (Exp (j (repr d'' a))) = (j (repr d a) -> j (repr d' a) -> j (repr d'' a))
-  BinFunc (Exp (j (repr d a))) (Exp (j (repr d' a))) (Exp (j (repr d'' a))) = (j (repr d a) -> j (repr d' a) -> j (repr d'' a))
-  BinFunc (Var (i (repr d a))) (Var (i' (repr d' a))) (Exp (j (repr d'' a))) = (j (repr d a) -> j (repr d' a) -> j (repr d'' a))
-
-class LiftVar a b c where
-  binOp :: BinFunc a b c -> a -> b -> c
-
-instance (Extends i j) => LiftVar (Var (i (repr d a))) (Exp (j (repr d' a))) (Exp (j (repr d'' a))) where
-  binOp f (Var a) (Exp b) = Exp $ f (weakens a) b
-
-instance (Extends i j) => LiftVar (Exp (j (repr d a))) (Var (i (repr d' a))) (Exp (j (repr d'' a))) where
-  binOp f (Exp a) (Var b) = Exp $ f a (weakens b)
-
-instance (Extends i j, Extends i' j) => LiftVar (Var (i' (repr d a))) (Var (i (repr d' a))) (Exp (j (repr d'' a))) where
-  binOp f (Var a) (Var b) = Exp $ f (weakens a) (weakens b)
-
-instance LiftVar (Exp (j (repr d a))) (Exp (j (repr d' a))) (Exp (j (repr d'' a))) where
-  binOp f (Exp a) (Exp b) = Exp $ f a b
-
-(+###) :: (LiftVar a b c, j ~ (i :. k), a' ~ Cyc t m zp, c ~ Exp (j (repr d a')),
-           AddPT repr, Applicative k, AdditiveCtxPT i repr d (Cyc t m zp),
-           BinFunc a b c ~ (j (repr d a') -> j (repr d a') -> j (repr d a')))
-  => a -> b -> c
-(+###) = binOp (+#)
-
-(*###) :: (LiftVar a b c, j ~ (i :. k), a' ~ Cyc t m zp, c ~ Exp (j (repr d a')),
-           MulPT repr, Applicative k, RingCtxPT i repr d (Cyc t m zp),
-           BinFunc a b c ~ (j (repr (Add1 d) a') -> j (repr (Add1 d) a') -> j (repr d a')))
-  => a -> b -> c
-(*###) = binOp (*#)
-{-
-pt3 :: forall a t m' zp expr m d i j k . (a ~ Cyc t m' zp, Ring a, AddPT expr, MulPT expr,
-        AddPubCtxPT m expr d a, AdditiveCtxPT m expr (Add1 d) a, RingCtxPT m expr d a,
-        Extends i (m :. k), Extends j (m :. k), Applicative k)
-  => Exp (i (expr (Add1 d) a) -> j (expr (Add1 d) a) -> (m :. k) (expr d a)
--}
-pt3 :: forall a t m' zp expr m i d .
-  (AppLiftable i, Applicative m, LambdaD expr, a ~ Cyc t m' zp,
-   AddPT expr, MulPT expr)
-  => (m :. i) (expr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
-pt3 = lamV $ \(x :: (i :. j1) (expr (Add1 d) a)) ->
-  Exp $ lamV $ \(y :: ((i :. j1) :. j2) (expr (Add1 d) a)) -> x *### (x +### y)
-
--}
-
-
-
-
-
---(+^) :: (AddPT expr, AdditiveCtxPT i expr d a) =>
---  i (expr d a) -> j (expr d a) -> expr d a
-{-
-(+##) :: forall i j k m repr a t m' zp (d :: Depth) .
-  (AddPT repr, AdditiveCtxPT m repr d a, Applicative k,
-   Extends i (m :. k), Extends j (m :. k), a ~ Cyc t m' zp)
-  => i (repr d a) -> j (repr d a) -> (m :. k) (repr d a)
-a +## b = (weakens a) +# (weakens b)
-
-(*##) :: forall i j k m repr a t m' zp (d :: Depth) .
-  (MulPT repr, RingCtxPT m repr d a, Applicative k,
-   Extends i (m :. k), Extends j (m :. k), a ~ Cyc t m' zp)
-  => i (repr (Add1 d) a) -> j (repr (Add1 d) a) -> (m :. k) (repr d a)
-a *## b = (weakens a) *# (weakens b)
-
-addPub :: forall i j m repr a t m' zp (d :: Depth) .
-  (AddPT repr, AddPubCtxPT m repr d a, Applicative j,
-   Extends i (m :. j), a ~ Cyc t m' zp)
-  => a -> i (repr d a) -> (m :. j) (repr d a)
-addPub c x = addPublicPT c (weakens x)
-
-pt1 :: (a ~ Cyc t m zp, Ring a,
-        AddPT expr, AddPubCtxPT i expr d a, AdditiveCtxPT i expr (Add1 d) a,
-        MulPT expr, RingCtxPT i expr d a, Applicative j)
-  => (i :. j) (expr (Add1 d) a) -> (i :. j) (expr d a)
-pt1 x = addPublicPT 2 $ x *# (x +# x)
-
-pt1' :: (Applicative j, AppLiftable i, LambdaD expr,
-         a ~ Cyc t m zp, Ring a,
-         AddPT expr, AddPubCtxPT i expr d a, AdditiveCtxPT i expr (Add1 d) a,
-         MulPT expr, RingCtxPT i expr d a)
-  => (j :. i) (expr ('L (Add1 d) d) (a -> a))
-pt1' = lamD $ var . pt1
-
-
-
-pt4  :: forall a t m' zp expr m d i j k . (a ~ Cyc t m' zp, Ring a, AddPT expr, MulPT expr,
-        AddPubCtxPT m expr d a, AdditiveCtxPT m expr (Add1 d) a, RingCtxPT m expr d a,
-        Extends i (m :. k), Extends j (m :. k), Applicative k)
-  => i (expr (Add1 d) a) -> j (expr (Add1 d) a) -> (m :. k) (expr d a)
-pt4 x y = addPub 2 $ (vr x *# (vr x +# vr y))
-
-pt2 :: forall a t m' zp expr m d i j k . (a ~ Cyc t m' zp, Ring a, AddPT expr, MulPT expr,
-        AddPubCtxPT m expr d a, AdditiveCtxPT m expr (Add1 d) a, RingCtxPT m expr d a,
-        Extends i (m :. k), Extends j (m :. k), Applicative k)
-  => i (expr (Add1 d) a) -> j (expr (Add1 d) a) -> (m :. k) (expr d a)
-pt2 x y = addPub 2 $ (x *## (x +## y :: (m :. k) (expr (Add1 d) a)) :: (m :. k) (expr d a))
-
-pt2' :: (a ~ Cyc t m' zp, Ring a, AddPT expr, MulPT expr,
-        AddPubCtxPT m expr d a, AdditiveCtxPT m expr (Add1 d) a, RingCtxPT m expr d a,
-        Applicative x, Applicative (yi :. yj), Applicative (yi :. yj), Applicative m, Extends x yi, Extends (yi :. yj) (m :. (yi :. yj)))
-  => x (expr (Add1 d) a) -> (yi :. yj) (expr (Add1 d) a) -> (m :. (yi :. yj)) (expr d a)
-pt2' = pt2
-
-pt2'' :: (Applicative m, AppLiftable yi, Applicative x,
-         a ~ Cyc t m' zp, Ring a, LambdaD expr,
-         AddPT expr, AddPubCtxPT m expr d a, AdditiveCtxPT m expr (Add1 d) a,
-         MulPT expr, Extends x yi, RingCtxPT m expr d a)
-  => x (expr (Add1 d) a) -> (m :. yi) (expr ('L (Add1 d) d) (a -> a))
--- EAC: GHC doesn't like point-free here
-pt2'' x = lamD $ pt2' $ liftJ x
-
-y ~ (yi :. yj)
-xy ~ (yi :. yj)
-x -> x :. yj
--}
-{-
-pt2'' :: (Applicative m, AppLiftable xm, LambdaD expr,
-         a ~ Cyc t m' zp, Ring a,
-         AddPT expr, --AddPubCtxPT i expr d a, AdditiveCtxPT i expr (Add1 d) a,
-         MulPT expr)--, RingCtxPT i expr d a)
-  => (m :. xm) (expr ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
-pt2'' = lamD pt2'
--}
-
-{-
-lamPT :: (Applicative m, AppLiftable i, Lambda repr) =>
-       (forall j. AppLiftable j =>
-        (i :. j) (repr a) -> (m :. (i :. j)) (repr b))
-       -> (m :. i) (repr (a->b))
--}
-{-
-{-
-(AddPT ptexpr, MulPT mon ptexpr, a ~ Cyc t m zp,
- AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
- RingCtxPT ptexpr d a, Ring a, Applicative mon, LambdaD ptexpr)
--}
-pt1 :: forall t m zp d ptexpr mon . (_)
-  => mon (ptexpr ('L (Add1 d) ('L (Add1 d) d)) (Cyc t m zp -> Cyc t m zp -> Cyc t m zp))
-pt1 = lamPT $ \b -> lamPT $ \a -> addPublicPT 2 $ var a *# (var a +# var b))
-
-{-
-(AddPT ptexpr, MulPT mon ptexpr, a ~ Cyc t m zp,
- AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
- RingCtxPT ptexpr d a, Ring a, Applicative mon, LambdaD ptexpr)
--}
-pt2 :: forall t m zp d ptexpr mon . (_)
-  => Cyc t m zp -> Cyc t m zp -> mon (ptexpr d (Cyc t m zp))
-pt2 a b = (\f -> appD (appD f $ lit a) $ lit b) <$> pt1
--}
 {-
 (TunnelPTCtx' expr d mon t eru r u zp,
  TunnelPTCtx' expr d mon t eus u s zp,
