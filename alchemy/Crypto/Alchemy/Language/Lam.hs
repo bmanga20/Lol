@@ -22,10 +22,7 @@ class Lambda expr where
   app :: expr (a -> b) -> expr a -> expr b
 
 class LambdaD expr where
-  lamD :: (Applicative m, AppLiftable i) =>
-           (forall j. AppLiftable j =>
-            (i :. j) (expr da a) -> (m :. (i :. j)) (expr db b))
-           -> (m :. i) (expr ('L da db) (a->b))
+  lamD :: (expr da a -> expr db b) -> expr ('L da db) (a->b)
 
 -- lam* first weakens repeatedly, then reassociates in one go
 lam1 :: (Applicative m, AppLiftable i, LambdaD expr) =>
@@ -164,9 +161,9 @@ assocLR = jassocp2
 -- a simpler type is possible if we don't need let-insertion across binders
 lamPT :: (Applicative m, AppLiftable i, LambdaD repr) =>
        (forall j. AppLiftable j =>
-        (i :. j) (repr (da :: Depth) a) -> (m :. (i :. j)) (repr (db :: Depth) b))
+        (i :. j) (repr da a) -> (m :. (i :. j)) (repr db b))
        -> (m :. i) (repr ('L da db) (a->b))
-lamPT f = undefined --fmap lamD $ J . fmap unJ . unJ $ f  $ J . pure $ id
+lamPT f = fmap lamD $ J . fmap unJ . unJ $ f  $ J . pure $ id
 
 
 
