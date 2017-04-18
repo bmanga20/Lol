@@ -26,20 +26,20 @@ lift2 :: (Applicative i) => (a -> b -> c) -> (ID i d a) -> (ID i d' b) -> (ID i 
 lift2 f a b = ID $ f <$> (unID a) <*> (unID b)
 
 -- | Metacircular plaintext symantics.
-instance AddPT (ID i) where
+instance AddPT ID where
 
-  type AddPubCtxPT   (ID i) d a = (Additive a, Functor i)
+  type AddPubCtxPT   ID d a = (Additive a)
   --type MulPubCtxPT   ID d a = (Ring a)
-  type AdditiveCtxPT (ID i) d a = (Additive a, Applicative i)
+  type AdditiveCtxPT ID d a = (Additive a)
 
   (+#) = lift2 (+)
   --negPT         = fmap negate
   addPublicPT a = fmap (a+)
   --mulPublicPT a = fmap (fmap (a*))
 
-instance MulPT (ID i) where
+instance MulPT ID where
 
-  type RingCtxPT (ID i) d a = (Ring a, Applicative i)
+  type RingCtxPT ID d a = (Ring a)
 
   (*#) = lift2 (*)
 {-

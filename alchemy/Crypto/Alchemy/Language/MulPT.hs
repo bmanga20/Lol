@@ -20,6 +20,6 @@ class MulPT expr where
 
   -- | Plaintext multiplication.  Inputs must be one depth less than
   -- output (so we can't use 'Ring').
-  (*#) :: (RingCtxPT expr d a, a ~ Cyc t m zp) =>
+  (*#) :: (RingCtxPT expr d a, a ~ Cyc t m zp, Applicative i) =>
           -- CJP: generalize input depths?
-          (expr (Add1 d) a) -> (expr (Add1 d) a) -> (expr d a)
+          expr i (Add1 d) a -> expr i (Add1 d) a -> expr i d a

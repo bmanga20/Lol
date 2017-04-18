@@ -22,19 +22,19 @@ newtype ShowPT i (d :: Depth) a = SPT {unSPT' :: i (Int -> String)}
 lift2 :: forall i a b c d d' d'' . (Applicative i) => ((Int -> String) -> (Int -> String) -> (Int -> String)) -> (ShowPT i d a) -> (ShowPT i d' b) -> (ShowPT i d'' c)
 lift2 f (SPT a) (SPT b) = SPT $ liftA2 f a b
 
-instance AddPT (ShowPT i) where
-  type AddPubCtxPT   (ShowPT i) d a = (Show a, Functor i)
+instance AddPT ShowPT where
+  type AddPubCtxPT   ShowPT d a = (Show a)
   --type MulPubCtxPT   ShowPT d a = (Show a)
-  type AdditiveCtxPT (ShowPT i) d a = (Applicative i)
+  type AdditiveCtxPT ShowPT d a = ()
 
   (+#) = lift2 $ \a b i -> "( " ++ a i ++ " )" ++ " + " ++ "( " ++ b i ++ " )"
   --negPT (SPT a) = SPT $ \i -> "neg $ " ++ a i
   addPublicPT a (SPT c) = SPT $ (\b -> \i -> "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b i ++ " )") <$> c
   --mulPublicPT a (SPT b) = SPT $ \i -> "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b i ++ " )"
 
-instance MulPT (ShowPT i) where
+instance MulPT ShowPT where
 
-  type RingCtxPT (ShowPT i) d a = (Applicative i)
+  type RingCtxPT ShowPT d a = ()
 
   (*#) = lift2 (\a b i -> "( " ++ a i ++ " )" ++ " * " ++ "( " ++ b i ++ " )")
 

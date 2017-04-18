@@ -18,11 +18,11 @@ class AddPT expr where
   --type MulPubCtxPT   expr (d :: Depth) a :: Constraint
   type AdditiveCtxPT expr (d :: Depth) a :: Constraint
 
-  addPublicPT :: (AddPubCtxPT expr d a, a ~ Cyc t m zp) => a -> (expr d a) -> (expr d a)
+  addPublicPT :: (AddPubCtxPT expr d a, a ~ Cyc t m zp, Applicative i) => a -> expr i d a -> expr i d a
 
   --mulPublicPT :: (MulPubCtxPT expr d a, a ~ Cyc t m zp) => a -> expr d a -> expr d a
 
-  (+#) :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp) => (expr d a) -> (expr d a) -> (expr d a)
+  (+#) :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp, Applicative i) => expr i d a -> expr i d a -> expr i d a
 {-
   negPT :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp) => expr d a -> expr d a
 

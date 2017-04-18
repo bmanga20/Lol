@@ -21,8 +21,8 @@ class Lambda expr where
   app :: expr (a -> b) -> expr a -> expr b
 
 class LambdaD expr where
-  lamD :: (Functor m, Applicative i) => (forall j . (Applicative j) => (expr (i :. j) da a) -> (expr (m :. (i :. j)) db b))
-          -> (expr (m :. i) ('L da db) (a->b))
+  lamD :: (Applicative i) => (forall j . (Applicative j) => (expr (i :. j) da a) -> (expr (i :. j) db b))
+          -> (expr i ('L da db) (a->b))
 
   appD :: (Applicative m) => (expr m ('L da db) (a->b)) -> (expr m da a) -> (expr m db b)
 
@@ -33,19 +33,18 @@ lam' f = fmap lam (J $ fmap unJ $ unJ $ f  (J $ pure id))
 
 
 -- lam* first weakens repeatedly, then reassociates in one go
-lam1 :: (Applicative m, Applicative i, LambdaD expr) =>
-  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b))
-    -> (m :. i) (expr ('L d1 d2) (a -> b))
-lam1 f = lamD $ f . var
+lam1 :: (Applicative i, LambdaD expr) =>
+  (forall j . (Applicative j) => expr (i :. j) d1 a -> expr (i :. j) d2 b)
+    -> expr i ('L d1 d2) (a -> b)
+lam1 = lamD
 
-lam2 :: (Applicative m, Applicative i, LambdaD expr) =>
-  (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c))
-    -> (m :. i) (expr ('L d1 ('L d2 d3)) (a -> b -> c))
+lam2 :: (Applicative i, LambdaD expr) =>
+  (forall j . (Applicative j) => expr (i :. j) d1 a -> expr (i :. j) d2 b -> expr (i :. j) d3 c)
+    -> expr i ('L d1 ('L d2 d3)) (a -> b -> c)
 lam2 f = lamD $ \x -> lamD $ \y ->
-  let reassoc = assocLR
-      x' = reassoc $ weakenL x   -- embed from  i . j1       to m . (i . (j1 . j2))
-      y' = reassoc y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
-      z  = f (var x') (var y')
+  let x' = weakenR x   -- embed from  (i . j1)       to (i . (j1 . j2))
+      y' = assocLR y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
+      z  = f x' y'
   in mapJ2 assocRL z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
 {-
 lam3 :: (Applicative m, Applicative i, LambdaD expr) =>
