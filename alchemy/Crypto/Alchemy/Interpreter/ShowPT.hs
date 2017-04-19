@@ -38,20 +38,18 @@ instance MulPT ShowPT where
 
   (*#) = lift2 (\a b i -> "( " ++ a i ++ " )" ++ " * " ++ "( " ++ b i ++ " )")
 
-{-
 instance ModSwPT ShowPT where
 
   type ModSwitchCtxPT ShowPT d a zp' = ()
 
-  modSwitchDec (SPT a) = SPT $ \i -> "modSwitchDec $ " ++ a i
+  modSwitchDec (SPT a) = SPT $ (\b i -> "modSwitchDec $ " ++ b i) <$> a
 
-instance (Applicative mon) => TunnelPT mon ShowPT where
+instance TunnelPT ShowPT where
 
   type TunnelCtxPT ShowPT d t e r s zp = ()
 
-  tunnelPT _ = pure $ \(SPT a) -> SPT $ \i -> "tunnel <FUNC> $ " ++ a i
+  tunnelPT _ (SPT a) = SPT $ (\b i -> "tunnel <FUNC> $ " ++ b i) <$> a
 
--}
 instance LambdaD ShowPT where
   lamD f = SPT $ fmap showF $ unJ $ unSPT' $ f $ SPT $ J $ pure id
     where showF g = \i ->

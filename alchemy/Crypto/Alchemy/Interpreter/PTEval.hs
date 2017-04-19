@@ -42,19 +42,19 @@ instance MulPT ID where
   type RingCtxPT ID d a = (Ring a)
 
   (*#) = lift2 (*)
-{-
+
 instance ModSwPT ID where
 
   type ModSwitchCtxPT ID d (Cyc t m zp) zp' = (RescaleCyc (Cyc t) zp zp', Fact m)
 
   modSwitchDec = fmap rescaleDec
 
-instance (Applicative mon) => TunnelPT mon ID where
+instance TunnelPT ID where
 
   type TunnelCtxPT ID d t e r s zp = (e `Divides` r, e `Divides` s, CElt t zp)
 
-  tunnelPT = pure . fmap . evalLin
--}
+  tunnelPT = fmap . evalLin
+
 -- | Metacircular lambda with depth.
 instance LambdaD ID where
   lamD f = ID $ unJ $ unID $ f $ ID $ J $ pure id

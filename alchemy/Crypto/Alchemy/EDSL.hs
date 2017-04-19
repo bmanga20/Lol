@@ -1,7 +1,7 @@
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PolyKinds #-}
@@ -68,18 +68,13 @@ pt1'' :: forall t m zp d ptexpr i a .
   => a -> a -> (ptexpr i d a)
 pt1'' a b = appD (appD pt1' (lit a)) (lit b)
 
-{-
-(TunnelPTCtx' expr d mon t eru r u zp,
- TunnelPTCtx' expr d mon t eus u s zp,
- Monad mon, LambdaD expr)
+tunn1 :: forall t r u s zp d expr i eru eus.
+  (TunnelPTCtx' expr d t eru r u zp,
+   TunnelPTCtx' expr d t eus u s zp,
+   LambdaD expr, Applicative i)
+  => Proxy u -> expr i ('L d d) (Cyc t r zp -> Cyc t s zp)
+tunn1 _ = lam1 $ \x -> tunnelPT' $ tunnelPT' @u x
 
-tunn1 :: forall t r u s zp d mon expr . (_)
-  => Proxy u -> mon (expr ('L d d) (Cyc t r zp -> Cyc t s zp))
-tunn1 _ = do
-  tunnel1 <- tunnelPT' @u
-  tunnel2 <- tunnelPT'
-  return $ lamPT $ \x -> tunnel2 $ tunnel1 x
--}
 type Zq q = ZqBasic q Int64
 
 -- EAC: perhaps the functions that run the interpreters should only accept an `i ~ Identity`?
@@ -106,10 +101,10 @@ main = do
          exp1b
   putStrLn $ unSCT x
 
-{-
+  let (exp3a, exp3b) = dupPT $ tunn1 @CT @H0 @H1 @H2 @(Zq PP8) @('T 'Z) Proxy
   -- example with rescale de-duplication when tunneling
   -- print the unapplied PT function
-  putStrLn $ unSPT $ runIdentity $ tunn1 @CT @H0 @H1 @H2 @(Zq PP8) @('T 'Z) Proxy
+  putStrLn $ runIdentity $ unSPT $ exp3a
   -- compile the up-applied function to CT, then print it out
   (y,_) <- compile
          @'[ '(H0, H0'), '(H1,H1'), '(H2, H2') ]
@@ -118,9 +113,9 @@ main = do
          @TrivGad
          @Double
          1.0
-         (tunn1 @CT @H0 @H1 @H2 @(Zq PP8) @('T 'Z) Proxy)
+         exp3b
   -- compile once, interpret with multiple ctexprs!!
-  let (z1,z2) = duplicate $ runDeepSeq y
+  let (z1,z2) = dupCT $ runDeepSeq y
   putStrLn $ unSCT z1
   putStrLn $ unSCT $ runDupRescale z2
 
@@ -132,13 +127,14 @@ type H1' = H1 * F13
 type H2' = H2
 
 -- EAC: This is copied from HomomPRF, but it needs a permanent home.
-type TunnelPTCtx' expr d mon t e r s zp =
+type TunnelPTCtx' expr d t e r s zp =
   (e ~ FGCD r s,                                     -- type restriction for simplicity
-   TunnelPT mon expr, TunnelCtxPT expr d t e r s zp, -- call to tunnelPT
+   TunnelPT expr, TunnelCtxPT expr d t e r s zp, -- call to tunnelPT
    e `Divides` r, e `Divides` s, CElt t zp,          -- linearDec
    ZPP zp, TElt t (ZpOf zp))                         -- crtSet
-tunnelPT' :: forall s mon expr t r zp e d . (TunnelPTCtx' expr d mon t e r s zp)
-  => mon (expr d (Cyc t r zp) -> expr d (Cyc t s zp))
+
+tunnelPT' :: forall s expr t r zp e d j . (TunnelPTCtx' expr d t e r s zp, Applicative j)
+  => expr j d (Cyc t r zp) -> expr j d (Cyc t s zp)
 tunnelPT' =
   let crts = proxy crtSet (Proxy::Proxy e)
       r = proxy totientFact (Proxy::Proxy r)
@@ -148,4 +144,3 @@ tunnelPT' =
       -- otherwise linearDec fails
       linf = linearDec (take dim crts) :: Linear t zp e r s
   in tunnelPT linf
--}

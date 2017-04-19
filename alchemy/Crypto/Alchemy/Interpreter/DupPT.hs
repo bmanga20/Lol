@@ -7,7 +7,9 @@ module Crypto.Alchemy.Interpreter.DupPT where
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
+import Crypto.Alchemy.Language.ModSwPT
 import Crypto.Alchemy.Language.MulPT
+import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Alchemy.Depth
 
 dupPT :: Dup expr1 expr2 i d a -> (expr1 i d a, expr2 i d a)
@@ -30,6 +32,22 @@ instance (MulPT expr1, MulPT expr2) => MulPT (Dup expr1 expr2) where
   type RingCtxPT (Dup expr1 expr2) d a = (RingCtxPT expr1 d a, RingCtxPT expr2 d a)
 
   (Dup a1 b1) *# (Dup a2 b2) = Dup (a1 *# a2) (b1 *# b2)
+
+instance (ModSwPT expr1, ModSwPT expr2) => ModSwPT (Dup expr1 expr2) where
+
+  type ModSwitchCtxPT (Dup expr1 expr2) d a zp' =
+    (ModSwitchCtxPT expr1 d a zp',
+     ModSwitchCtxPT expr2 d a zp')
+
+  modSwitchDec (Dup a b) = Dup (modSwitchDec a) (modSwitchDec b)
+
+instance (TunnelPT expr1, TunnelPT expr2) => TunnelPT (Dup expr1 expr2) where
+
+  type TunnelCtxPT (Dup expr1 expr2) d t e r s zp =
+    (TunnelCtxPT expr1 d t e r s zp,
+     TunnelCtxPT expr2 d t e r s zp)
+
+  tunnelPT f (Dup a b) = Dup (tunnelPT f a) (tunnelPT f b)
 
 instance (LambdaD expr1, LambdaD expr2) => LambdaD (Dup expr1 expr2) where
   lamD f =

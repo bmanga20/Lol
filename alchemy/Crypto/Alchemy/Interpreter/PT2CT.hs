@@ -141,9 +141,9 @@ instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic
     hint :: KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup zq zq'map)) <- liftJ $ getKSHint (Proxy::Proxy zq'map) (Proxy::Proxy (LiftOf zp)) (Proxy::Proxy zq)
     return $ rescaleCT $ keySwitchQuadCT hint $ a' *^ b'
     --(\a' b' (hint :: KSQuadCircHint gad (Cyc t (Lookup m m'map) (Lookup zq zq'map))) -> P2C $ rescaleCT $ keySwitchQuadCT hint $ a' *^ b') <$> (runP2C <$> a) <*> (runP2C <$> b) <*> (liftJ $ getKSHint (Proxy::Proxy zq'map) (Proxy::Proxy (LiftOf zp)) (Proxy::Proxy zq))
-{-
-instance (SymCT ctexpr) => ModSwPT (PT2CT m'map zqs zq'map gad v ctexpr) where
-  type ModSwitchCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) zp' =
+
+instance (SymCT ctexpr, Functor mon) => ModSwPT (PT2CT m'map zqs zq'map gad v ctexpr mon) where
+  type ModSwitchCtxPT (PT2CT m'map zqs zq'map gad v ctexpr mon) d (Cyc t m zp) zp' =
     (ModSwitchCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))) zp')
 
   modSwitchDec = p2cmap modSwitchPT
@@ -156,18 +156,21 @@ type TunnelCtxPT' ctexpr t e r s r' s' z zp zq zq' gad v =
    RescaleCtxCT ctexpr (CT r zp (Cyc t r' zq')) zq, RescaleCtxCT ctexpr (CT s zp (Cyc t s' zq)) zq')
 
 instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic],[Dynamic]) mon)
-  => TunnelPT mon (PT2CT m'map zqs zq'map gad v ctexpr) where
-  type TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d t e r s zp =
+  => TunnelPT (PT2CT m'map zqs zq'map gad v ctexpr mon) where
+  type TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr mon) d t e r s zp =
     (TunnelCtxPT' ctexpr t e r s (Lookup r m'map) (Lookup s m'map) (LiftOf zp) zp (zqs !! d) (zqs !! (Add1 d)) gad v)
 
-  tunnelPT :: forall d t e r s zp .
-    (TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr) d t e r s zp)
-    => Linear t zp e r s -> mon (PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t r zp)
-                                 -> PT2CT m'map zqs zq'map gad v ctexpr d (Cyc t s zp))
-  tunnelPT f = do
-    thint <- genTunnHint @gad @(zqs !! (Add1 d)) f
-    return $ p2cmap (rescaleCT . tunnelCT thint . rescaleCT)
--}
+  tunnelPT :: forall d t e r s zp i .
+    (TunnelCtxPT (PT2CT m'map zqs zq'map gad v ctexpr mon) d t e r s zp,
+     Applicative i)
+    => Linear t zp e r s
+       -> PT2CT m'map zqs zq'map gad v ctexpr mon i d (Cyc t r zp)
+       -> PT2CT m'map zqs zq'map gad v ctexpr mon i d (Cyc t s zp)
+  tunnelPT f (P2C a) = P2C $
+    (\thint -> rescaleCT . tunnelCT thint . rescaleCT)
+      <$> (J $ fmap pure $ genTunnHint @gad @(zqs !! (Add1 d)) f)
+      <*> a
+
 {-
 EAC: unclear if lam' is a useful abstraction
 lam' :: (Functor m, Applicative i, Lambda expr) =>
