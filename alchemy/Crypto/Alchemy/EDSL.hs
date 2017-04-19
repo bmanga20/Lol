@@ -58,15 +58,15 @@ pt1' :: forall t m zp d ptexpr i a .
    RingCtxPT ptexpr d a, Ring a)
   => (ptexpr i ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
 pt1' = lam2 $ pt1
-{-
-pt1'' :: forall t m' zp d ptexpr m i a .
-  (a ~ Cyc t m' zp, Applicative i, Applicative m,
-   AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr, Lit (ptexpr (Add1 d)),
-   AddPubCtxPT m ptexpr d a, AdditiveCtxPT m ptexpr (Add1 d) a,
-   RingCtxPT m ptexpr d a, Ring a, LitCtx (ptexpr (Add1 d)) a)
-  => a -> a -> (m :. i) (ptexpr d a)
-pt1'' a b = appD (appD pt1' (pure $ lit a)) (pure $ lit b)
--}
+
+pt1'' :: forall t m zp d ptexpr i a .
+  (a ~ Cyc t m zp, Applicative i, EnvLiftable ptexpr,
+   AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr, Lit (ptexpr i (Add1 d)),
+   AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
+   RingCtxPT ptexpr d a, Ring a, LitCtx (ptexpr i (Add1 d)) a)
+  => a -> a -> (ptexpr i d a)
+pt1'' a b = appD (appD pt1' (lit a)) (lit b)
+
 {-
 (TunnelPTCtx' expr d mon t eru r u zp,
  TunnelPTCtx' expr d mon t eus u s zp,
@@ -80,9 +80,12 @@ tunn1 _ = do
   return $ lamPT $ \x -> tunnel2 $ tunnel1 x
 -}
 type Zq q = ZqBasic q Int64
-{-
+
 main :: IO ()
 main = do
+  expr1
+
+
   -- print the unapplied PT function
   putStrLn $ unSPT $ runIdentity $ pt1 @CT @F4 @Int64 @('T 'Z)
   -- apply the PT function to arguments, then print it out
@@ -99,7 +102,7 @@ main = do
          1.0
          (pt1 @CT @F4 @(Zq 7) @('T 'Z))
   putStrLn $ unSCT x
--}
+
 {-
   -- example with rescale de-duplication when tunneling
   -- print the unapplied PT function

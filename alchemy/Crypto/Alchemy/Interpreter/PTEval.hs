@@ -33,9 +33,9 @@ instance AddPT ID where
   type AdditiveCtxPT ID d a = (Additive a)
 
   (+#) = lift2 (+)
-  --negPT         = fmap negate
+  negPT         = fmap (fmap negate)
   addPublicPT a = fmap (a+)
-  --mulPublicPT a = fmap (fmap (a*))
+  mulPublicPT a = fmap (fmap (a*))
 
 instance MulPT ID where
 
@@ -54,12 +54,12 @@ instance (Applicative mon) => TunnelPT mon ID where
   type TunnelCtxPT ID d t e r s zp = (e `Divides` r, e `Divides` s, CElt t zp)
 
   tunnelPT = pure . fmap . evalLin
-
+-}
 -- | Metacircular lambda with depth.
 instance LambdaD ID where
   lamD f   = ID $ unID . f . ID
-  appD f a = ID $ unID f $ unID a
--}
+  appD f a = ID $ unID f <*> unID a
+
 instance (Applicative i) => Lit (ID i d) where
   type LitCtx (ID i d) a = ()
   lit = ID . pure
