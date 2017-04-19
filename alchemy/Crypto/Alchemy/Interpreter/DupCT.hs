@@ -1,12 +1,12 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Crypto.Alchemy.Interpreter.Duplicate where
+module Crypto.Alchemy.Interpreter.DupCT where
 
 import Crypto.Alchemy.Language.CT
 import Crypto.Alchemy.Language.Lam
 
-duplicate :: Dup expr1 expr2 a -> (expr1 a, expr2 a)
-duplicate (Dup a b) = (a,b)
+dupCT :: Dup expr1 expr2 a -> (expr1 a, expr2 a)
+dupCT (Dup a b) = (a,b)
 
 data Dup expr1 expr2 a = Dup {unDupA :: expr1 a, unDupB :: expr2 a}
 

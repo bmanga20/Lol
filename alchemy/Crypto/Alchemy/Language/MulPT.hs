@@ -6,9 +6,8 @@
 module Crypto.Alchemy.Language.MulPT where
 
 import Crypto.Alchemy.Depth
-import Crypto.Alchemy.Language.Lam
 import Crypto.Lol (Cyc)
-import GHC.Exts
+import GHC.Exts (Constraint)
 
 infixl 7 *#
 

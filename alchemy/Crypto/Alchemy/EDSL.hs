@@ -18,7 +18,8 @@ module Crypto.Alchemy.EDSL where
 import Control.Applicative
 import Control.Monad.Identity
 import Crypto.Alchemy.Depth
-import Crypto.Alchemy.Interpreter.Duplicate
+import Crypto.Alchemy.Interpreter.DupCT
+import Crypto.Alchemy.Interpreter.DupPT
 import Crypto.Alchemy.Language.CT ()
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
@@ -42,16 +43,16 @@ import Crypto.Lol.Types.ZPP -- EAC: I shouldn't need to explicitly import this..
 
 import Data.Type.Natural
 
-pt1 :: forall t m zp d ptexpr ptexpr' i a .
-  (a ~ Cyc t m zp,
+pt1 :: forall t m zp d ptexpr i a .
+  (a ~ Cyc t m zp, Applicative i,
    AddPT ptexpr, MulPT ptexpr,
    AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
    RingCtxPT ptexpr d a, Ring a)
   => (ptexpr i (Add1 d) a) -> (ptexpr i (Add1 d) a) -> (ptexpr i d a)
 pt1 a b = addPublicPT 2 $ a *# (a +# b)
 
-pt1' :: forall t m zp d ptexpr ptexpr' i a .
-  (a ~ Cyc t m zp,
+pt1' :: forall t m zp d ptexpr i a .
+  (a ~ Cyc t m zp, Applicative i, EnvLiftable ptexpr,
    AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr,
    AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
    RingCtxPT ptexpr d a, Ring a)

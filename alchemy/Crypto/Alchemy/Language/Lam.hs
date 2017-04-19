@@ -21,10 +21,10 @@ class Lambda expr where
   app :: expr (a -> b) -> expr a -> expr b
 
 class LambdaD expr where
-  lamD :: (Applicative i) => (forall j . (Applicative j) => (expr (i :. j) da a) -> (expr (i :. j) db b))
-          -> (expr i ('L da db) (a->b))
+  lamD :: (Applicative i) => (forall j . (Applicative j) => expr (i :. j) da a -> expr (i :. j) db b)
+          -> expr i ('L da db) (a->b)
 
-  appD :: (Applicative m) => (expr m ('L da db) (a->b)) -> (expr m da a) -> (expr m db b)
+  appD :: (Applicative i) => (expr i ('L da db) (a->b)) -> (expr i da a) -> (expr i db b)
 
 lam' :: (Functor m, Applicative i, Lambda expr) =>
   (forall j . (Applicative j) => (i :. j) (expr a) -> (m :. (i :. j)) (expr b))
@@ -38,14 +38,14 @@ lam1 :: (Applicative i, LambdaD expr) =>
     -> expr i ('L d1 d2) (a -> b)
 lam1 = lamD
 
-lam2 :: (Applicative i, LambdaD expr) =>
+lam2 :: (Applicative i, LambdaD expr, EnvLiftable expr) =>
   (forall j . (Applicative j) => expr (i :. j) d1 a -> expr (i :. j) d2 b -> expr (i :. j) d3 c)
     -> expr i ('L d1 ('L d2 d3)) (a -> b -> c)
 lam2 f = lamD $ \x -> lamD $ \y ->
-  let x' = weakenR x   -- embed from  (i . j1)       to (i . (j1 . j2))
-      y' = assocLR y -- embed from (i . j1) . j2 to m . (i . (j1 . j2))
+  let x' = assocLR $ extendR x -- embed from  (i . j1)       to (i . (j1 . j2))
+      y' = assocLR y           -- embed from ((i . j1) . j2) to (i . (j1 . j2))
       z  = f x' y'
-  in mapJ2 assocRL z  -- reassociate from m . (i . (j1 . j2)) to m . ((i . j1) . j2)
+  in assocRL z  -- reassociate from (i . (j1 . j2)) to ((i . j1) . j2)
 {-
 lam3 :: (Applicative m, Applicative i, LambdaD expr) =>
   (forall j . (Applicative j) => (m :. (i :. j)) (expr d1 a) -> (m :. (i :. j)) (expr d2 b) -> (m :. (i :. j)) (expr d3 c) -> (m :. (i :. j)) (expr d4 d))
@@ -131,6 +131,12 @@ lam4Rec :: forall m i expr d1 d2 d3 d4 d5 a b c d e . (Applicative m, AppLiftabl
 lam4Rec f = lamPT $ \x -> lam3 $ f (var $ weakenL x)
 -}
 
+class EnvLiftable repr where
+  extendR :: (Applicative i, Applicative j) => repr i (d :: Depth) a -> repr (i :. j) d a
+
+  assocRL :: Functor m => repr (m :. (i1 :. i2)) (d :: Depth) a -> repr ((m :. i1) :. i2) d a
+
+  assocLR :: Functor m => repr ((m :. i1) :. i2) (d :: Depth) a -> repr (m :. (i1 :. i2)) d a
 
 
 
@@ -141,13 +147,13 @@ weakenR = liftJ2
 
 weakenL :: (Applicative m,Applicative i,Applicative j) => (m :. i) (repr a) -> ((m :. i) :. j) (repr a)
 weakenL = liftJ
-
+{-
 assocRL :: Functor m => (m :. (i1 :. i2)) a -> ((m :. i1) :. i2) a
 assocRL = jassocm2
 
 assocLR :: Functor m => ((m :. i1) :. i2) a -> (m :. (i1 :. i2)) a
 assocLR = jassocp2
-
+-}
 -- from TSCore.hs
 appPT :: (Applicative m, Lambda repr) => m (repr (a->b)) -> m (repr a) -> m (repr b)
 appPT f x = app <$> f <*> x

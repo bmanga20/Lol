@@ -109,15 +109,15 @@ instance (SymCT ctexpr, Applicative mon) => AddPT (PT2CT m'map zqs zq'map gad v 
 
   type AddPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr mon) d (Cyc t m zp) =
     (AddPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
-  --type MulPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr) d (Cyc t m zp) =
-  --  (MulPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
+  type MulPubCtxPT   (PT2CT m'map zqs zq'map gad v ctexpr mon) d (Cyc t m zp) =
+    (MulPubCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
   type AdditiveCtxPT (PT2CT m'map zqs zq'map gad v ctexpr mon) d (Cyc t m zp) =
     (AdditiveCtxCT ctexpr (CT m zp (Cyc t (Lookup m m'map) (zqs !! d))))
 
   (P2C a) +# (P2C b) = P2C $ ((+^) <$> a <*> b)
-  --negPT = p2cmap negCT
+  negPT = p2cmap negCT
   addPublicPT = p2cmap . addPublicCT
-  --mulPublicPT = p2cmap . mulPublicCT
+  mulPublicPT = p2cmap . mulPublicCT
 
 type RingCtxPT' ctexpr t m m' z zp zq zq' zq'map gad v =
   (RingCtxCT ctexpr (CT m zp (Cyc t m' zq')),
@@ -179,56 +179,10 @@ instance (Lambda ctexpr, Applicative mon) => LambdaD (PT2CT m'map zqs zq'map gad
 
   appD f x = P2C $ app <$> (runP2C f) <*> (runP2C x)
 
-{-  :: (forall j. AppLiftable j => (i :. j) (repr da a) -> (m :. (i :. j)) (repr db b))
-          -> (m :. i) (repr ('L da db) (a->b))
-}
-j ~ ((->) ctexpr a)
-id :: (ctexpr a -> ctexpr a) ~ j (ctexpr a)
-pure id :: i (j (ctexpr a))
-J $ .. :: (i :. j) (ctexpr a)
-unJ $ f ... :: m ((i :. j) (ctexpr ))
--}
-
-{-
--- newtype (i :. j) a = J{unJ:: i (j a)}
-lam :: (Applicative m, AppLiftable i, SSym repr, LamPure repr) =>
-       (forall j. AppLiftable j =>
-        (i :. j) (repr a) -> (m :. (i :. j)) (repr b))
-       -> (m :. i) (repr (a->b))
-lam f = fmap lamS (J $ fmap unJ $ unJ $ f  (J $ pure $ v))
- where
- -- instantiate applicative j to be a Reader: repr a -> w
- v = \repra -> repra                    -- bound variable
-
-
-
--- j ~ ((->) (repr a))
--- v :: repr a -> repr a
--- v ~ j (repr a)
-
--- pure v :: i (j (repr a))
--- J $ pure v :: (i :. j) (repr a)
--- unJ $ f ... :: m ((i :. j) (repr b))
--- fmap unJ $ unJ $ f ... :: m (i (j (repr b)))
--- J $ fmap unJ $ unJ $ f ... :: (m :. i) (j (repr b)) ~ (m :. i) (repr a -> repr b)
--- fmap lamS ... :: (m :. i) (repr (a -> b))
-
-
-
-
-
--- a simpler type is possible if we don't need let-insertion across binders
-lamPT :: (Applicative m, AppLiftable i, Lambda repr) =>
-       (forall j. AppLiftable j =>
-        (i :. j) (repr da a) -> (m :. (i :. j)) (repr db b))
-       -> (m :. i) (repr ('L da db) (a->b))
-lamPT f = fmap lam $ J . fmap unJ . unJ $ f  $ J . pure $ id
--}
-
-
-
-
-
+instance (Applicative mon) => EnvLiftable (PT2CT m'map zqs zq'map gad v ctexpr mon) where
+  extendR (P2C a) = P2C $ jassocp2 $ liftJ a
+  assocRL (P2C a) = P2C $ mapJ2 jassocm2 a
+  assocLR (P2C a) = P2C $ mapJ2 jassocp2 a
 
 ---- Monad helper functions
 
