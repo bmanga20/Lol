@@ -24,13 +24,13 @@ lift2 f (SPT a) (SPT b) = SPT $ liftA2 f a b
 
 instance AddPT ShowPT where
   type AddPubCtxPT   ShowPT d a = (Show a)
-  --type MulPubCtxPT   ShowPT d a = (Show a)
+  type MulPubCtxPT   ShowPT d a = (Show a)
   type AdditiveCtxPT ShowPT d a = ()
 
   (+#) = lift2 $ \a b i -> "( " ++ a i ++ " )" ++ " + " ++ "( " ++ b i ++ " )"
-  --negPT (SPT a) = SPT $ \i -> "neg $ " ++ a i
-  addPublicPT a (SPT c) = SPT $ (\b -> \i -> "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b i ++ " )") <$> c
-  --mulPublicPT a (SPT b) = SPT $ \i -> "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b i ++ " )"
+  negPT (SPT a) = SPT $ (\b i -> "neg $ " ++ b i) <$> a
+  addPublicPT a (SPT c) = SPT $ (\b i -> "( " ++ (show a) ++ " )" ++ " + " ++ "( " ++ b i ++ " )") <$> c
+  mulPublicPT a (SPT c) = SPT $ (\b i -> "( " ++ (show a) ++ " )" ++ " * " ++ "( " ++ b i ++ " )") <$> c
 
 instance MulPT ShowPT where
 
@@ -51,13 +51,21 @@ instance (Applicative mon) => TunnelPT mon ShowPT where
 
   tunnelPT _ = pure $ \(SPT a) -> SPT $ \i -> "tunnel <FUNC> $ " ++ a i
 
-instance LambdaD ShowPT where
-  lamD f = SPT $ \i ->
-    let x = "x" ++ show i
-        (SPT b) = f $ SPT $ const x
-    in "\\" ++ x ++ " -> " ++ (b $ i+1)
-  appD (SPT f) (SPT a) = SPT $ \i -> "( " ++ f i ++ " ) " ++ a i
 -}
+instance LambdaD ShowPT where
+  lamD f = SPT $ fmap showF $ unJ $ unSPT' $ f $ SPT $ J $ pure id
+    where showF g = \i ->
+            let x = "x" ++ show i
+                b = g $ const x
+            in "\\" ++ x ++ " -> " ++ (b $ i+1)
+
+  appD (SPT f) (SPT a) = SPT $ (\f' a' i -> "( " ++ f' i ++ " ) " ++ a' i) <$> f <*> a
+
+instance EnvLiftable ShowPT where
+  extendR (SPT a) = SPT $ liftJ a
+  assocRL (SPT a) = SPT $ jassocm2 a
+  assocLR (SPT a) = SPT $ jassocp2 a
+
 instance (Applicative i) => Lit (ShowPT i d) where
   type LitCtx (ShowPT i d) a = (Show a)
   lit a = SPT $ pure $ const $ show a

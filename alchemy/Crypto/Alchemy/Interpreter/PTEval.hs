@@ -29,13 +29,13 @@ lift2 f a b = ID $ f <$> (unID a) <*> (unID b)
 instance AddPT ID where
 
   type AddPubCtxPT   ID d a = (Additive a)
-  --type MulPubCtxPT   ID d a = (Ring a)
+  type MulPubCtxPT   ID d a = (Ring a)
   type AdditiveCtxPT ID d a = (Additive a)
 
   (+#) = lift2 (+)
-  negPT         = fmap (fmap negate)
+  negPT         = fmap negate
   addPublicPT a = fmap (a+)
-  mulPublicPT a = fmap (fmap (a*))
+  mulPublicPT a = fmap (a*)
 
 instance MulPT ID where
 
@@ -57,8 +57,13 @@ instance (Applicative mon) => TunnelPT mon ID where
 -}
 -- | Metacircular lambda with depth.
 instance LambdaD ID where
-  lamD f   = ID $ unID . f . ID
-  appD f a = ID $ unID f <*> unID a
+  lamD f = ID $ unJ $ unID $ f $ ID $ J $ pure id
+  appD (ID f) (ID a) = ID $ f <*> a
+
+instance EnvLiftable ID where
+  extendR (ID a) = ID $ liftJ a
+  assocRL (ID a) = ID $ jassocm2 a
+  assocLR (ID a) = ID $ jassocp2 a
 
 instance (Applicative i) => Lit (ID i d) where
   type LitCtx (ID i d) a = ()

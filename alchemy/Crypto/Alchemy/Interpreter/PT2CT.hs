@@ -37,6 +37,7 @@ import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Lol hiding (Pos(..))
 import Crypto.Lol.Applications.SymmSHE hiding (tunnelCT, modSwitchPT)
 
+import Control.Monad.Identity
 import Data.Dynamic
 import Data.Maybe (mapMaybe)
 import Data.Type.Natural (Nat(..))
@@ -84,20 +85,16 @@ p2cmap :: (Functor (mon :. i)) => (ctexpr (CTType m'map zqs da a) -> ctexpr (CTT
 p2cmap f a = P2C $ f <$> runP2C a
 
 -- hidden constructor
-newtype CustomMonad v (rnd :: * -> *) a = CMon {unCMon :: ReaderT v (StateT ([Dynamic],[Dynamic]) rnd) a}
-  deriving (Functor, Applicative, Monad, MonadReader v, MonadState ([Dynamic],[Dynamic]), MonadRandom)
-
--- hidden constructor
 newtype PT2CTState = St ([Dynamic],[Dynamic])
-{-
+
 -- explicit forall for type application
-compile :: forall m'map zqs zq'map gad v ctexpr d a rnd .
-  (MonadRandom rnd)
-  => v -> CustomMonad v rnd (PT2CT m'map zqs zq'map gad v ctexpr d a) -> rnd (ctexpr (CTType m'map zqs d a), PT2CTState)
-compile v a = do
-  (b,s) <- flip runStateT ([],[]) $ flip runReaderT v $ unCMon a
-  return (runP2C b, St s)
--}
+compile :: forall m'map zqs zq'map gad v ctexpr d a rnd mon .
+  (MonadRandom rnd, mon ~ ReaderT v (StateT ([Dynamic],[Dynamic]) rnd))
+  => v -> PT2CT m'map zqs zq'map gad v ctexpr mon Identity d a -> rnd (ctexpr (CTType m'map zqs d a), PT2CTState)
+compile v (P2C a) = do
+  (b,s) <- flip runStateT ([],[]) $ flip runReaderT v $ unJ a
+  return (runIdentity b, St s)
+
 -- idea: if we create a CT with a type that doesn't appear in
   -- The following sig means we can't give ctexpr a Lit instance
 --encryptArg :: PT2CTState -> Cyc t m zp -> ctexpr (CT m zp (Cyc t m' zq))
@@ -171,12 +168,16 @@ instance (SymCT ctexpr, MonadRandom mon, MonadReader v mon, MonadState ([Dynamic
     thint <- genTunnHint @gad @(zqs !! (Add1 d)) f
     return $ p2cmap (rescaleCT . tunnelCT thint . rescaleCT)
 -}
-
+{-
+EAC: unclear if lam' is a useful abstraction
+lam' :: (Functor m, Applicative i, Lambda expr) =>
+  (forall j . (Applicative j) => (i :. j) (expr a) -> (m :. (i :. j)) (expr b))
+    -> (m :. i) (expr (a -> b))
+lam' f = fmap lam (J $ fmap unJ $ unJ $ f  (J $ pure id))
+lamD f = P2C $ lam' $ runP2C . f . P2C . var
+-}
 instance (Lambda ctexpr, Applicative mon) => LambdaD (PT2CT m'map zqs zq'map gad v ctexpr mon) where
-  -- x :: ((m :. i) :. j)
-  -- assocRL x :: (m :. (i :. j))
-  lamD f = P2C $ lam' $ runP2C . f . P2C . var
-
+  lamD f = P2C $ fmap lam $ J $ fmap unJ $ unJ $ runP2C $ f $ P2C $ var $ J $ pure id
   appD f x = P2C $ app <$> (runP2C f) <*> (runP2C x)
 
 instance (Applicative mon) => EnvLiftable (PT2CT m'map zqs zq'map gad v ctexpr mon) where

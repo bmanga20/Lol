@@ -39,6 +39,11 @@ instance (LambdaD expr1, LambdaD expr2) => LambdaD (Dup expr1 expr2) where
 
   appD (Dup fa fb) (Dup a b) = Dup (appD fa a) (appD fb b)
 
+instance (EnvLiftable expr1, EnvLiftable expr2) => EnvLiftable (Dup expr1 expr2) where
+  extendR (Dup a b) = Dup (extendR a) (extendR b)
+  assocRL (Dup a b) = Dup (assocRL a) (assocRL b)
+  assocLR (Dup a b) = Dup (assocLR a) (assocLR b)
+
 instance (Lit (expr1 i d), Lit (expr2 i d)) => Lit (Dup expr1 expr2 i d) where
   type LitCtx (Dup expr1 expr2 i d) a = (LitCtx (expr1 i d) a, LitCtx (expr2 i d) a)
   lit a = Dup (lit a) (lit a)

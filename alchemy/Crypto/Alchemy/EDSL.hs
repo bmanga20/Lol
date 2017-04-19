@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -81,17 +82,19 @@ tunn1 _ = do
 -}
 type Zq q = ZqBasic q Int64
 
+-- EAC: perhaps the functions that run the interpreters should only accept an `i ~ Identity`?
+
 main :: IO ()
 main = do
-  expr1
-
+  let (exp1a, exp1b) = dupPT $ pt1' @CT @F4 @(Zq 7) @('T 'Z)
+      (exp2a, exp2b) = dupPT $ pt1'' @CT @F4 @Int64 7 11
 
   -- print the unapplied PT function
-  putStrLn $ unSPT $ runIdentity $ pt1 @CT @F4 @Int64 @('T 'Z)
+  putStrLn $ runIdentity $ unSPT exp1a
   -- apply the PT function to arguments, then print it out
-  putStrLn $ unSPT $ runIdentity $ pt2 @CT @F4 @Int64 7 11
+  putStrLn $ runIdentity $ unSPT exp2a
   -- apply the PT function to arguments and evaluate the function
-  putStrLn $ show $ unID $ runIdentity $ pt2 @CT @F4 @Int64 7 11
+  putStrLn $ show $ runIdentity $ unID exp2b
   -- compile the un-applied function to CT, then print it out
   (x,_) <- compile
          @'[ '(F4, F8) ]
@@ -100,7 +103,7 @@ main = do
          @TrivGad
          @Double
          1.0
-         (pt1 @CT @F4 @(Zq 7) @('T 'Z))
+         exp1b
   putStrLn $ unSCT x
 
 {-
