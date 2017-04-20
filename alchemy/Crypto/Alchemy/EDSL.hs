@@ -26,10 +26,10 @@ import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.ModSwPT ()
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
-import Crypto.Alchemy.Interpreter.CTEval ()
+import Crypto.Alchemy.Interpreter.EvalCT ()
 import Crypto.Alchemy.Interpreter.DeepSeq
 import Crypto.Alchemy.Interpreter.DupRescale
-import Crypto.Alchemy.Interpreter.PTEval
+import Crypto.Alchemy.Interpreter.EvalPT
 import Crypto.Alchemy.Interpreter.PT2CT
 import Crypto.Alchemy.Interpreter.ShowPT
 import Crypto.Alchemy.Interpreter.ShowCT

@@ -26,4 +26,4 @@ class AddPT expr where
 
 (-#) :: (AddPT expr, AdditiveCtxPT expr d a, a ~ Cyc t m zp, Applicative i)
      => expr i d a -> expr i d a -> expr i d a
-a -# b = a +# (negPT b)
+a -# b = a +# negPT b
