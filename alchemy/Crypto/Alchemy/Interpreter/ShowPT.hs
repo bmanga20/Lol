@@ -1,10 +1,10 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE TypeFamilies, RankNTypes, ScopedTypeVariables          #-}
+{-# LANGUAGE DataKinds    #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Crypto.Alchemy.Interpreter.ShowPT where
+module Crypto.Alchemy.Interpreter.ShowPT (showPT, ShowPT) where
 
 import Control.Applicative
+import Control.Monad.Identity
 
 import Crypto.Alchemy.Depth
 import Crypto.Alchemy.Language.AddPT
@@ -14,12 +14,12 @@ import Crypto.Alchemy.Language.ModSwPT
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
 
-unSPT :: (Functor i) => ShowPT i d a -> i String
-unSPT (SPT a) = ($ 0) <$> a
+showPT :: ShowPT Identity d a -> String
+showPT (SPT a) = runIdentity a 0
 
-newtype ShowPT i (d :: Depth) a = SPT {unSPT' :: i (Int -> String)}
+newtype ShowPT i (d :: Depth) a = SPT {unSPT :: i (Int -> String)}
 
-lift2 :: forall i a b c d d' d'' . (Applicative i) => ((Int -> String) -> (Int -> String) -> (Int -> String)) -> (ShowPT i d a) -> (ShowPT i d' b) -> (ShowPT i d'' c)
+lift2 :: (Applicative i) => ((Int -> String) -> (Int -> String) -> (Int -> String)) -> (ShowPT i d a) -> (ShowPT i d' b) -> (ShowPT i d'' c)
 lift2 f (SPT a) (SPT b) = SPT $ liftA2 f a b
 
 instance AddPT ShowPT where
@@ -51,7 +51,7 @@ instance TunnelPT ShowPT where
   tunnelPT _ (SPT a) = SPT $ (\b i -> "tunnel <FUNC> $ " ++ b i) <$> a
 
 instance LambdaD ShowPT where
-  lamD f = SPT $ fmap showF $ unJ $ unSPT' $ f $ SPT $ J $ pure id
+  lamD f = SPT $ fmap showF $ unJ $ unSPT $ f $ SPT $ J $ pure id
     where showF g = \i ->
             let x = "x" ++ show i
                 b = g $ const x

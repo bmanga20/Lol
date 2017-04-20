@@ -1,15 +1,15 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE NoImplicitPrelude    #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module Crypto.Alchemy.Interpreter.PTEval where
+module Crypto.Alchemy.Interpreter.PTEval (ID, evalPT) where
 
 import Control.Applicative
+import Control.Monad.Identity
+
 import Crypto.Alchemy.Depth
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
@@ -18,6 +18,9 @@ import Crypto.Alchemy.Language.ModSwPT
 import Crypto.Alchemy.Language.MulPT
 import Crypto.Alchemy.Language.TunnelPT
 import Crypto.Lol
+
+evalPT :: ID Identity d a -> a
+evalPT (ID a) = runIdentity a
 
 -- | Metacircular evaluator with depth.
 newtype ID i (d :: Depth) a = ID {unID :: i a} deriving (Show, Eq, Functor)

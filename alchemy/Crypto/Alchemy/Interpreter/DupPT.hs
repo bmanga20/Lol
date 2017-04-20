@@ -1,8 +1,7 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds    #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoMonoLocalBinds #-} -- required for the LambdaD instance
 
-module Crypto.Alchemy.Interpreter.DupPT where
+module Crypto.Alchemy.Interpreter.DupPT (Dup, dupPT) where
 
 import Crypto.Alchemy.Language.AddPT
 import Crypto.Alchemy.Language.Lam
@@ -50,10 +49,9 @@ instance (TunnelPT expr1, TunnelPT expr2) => TunnelPT (Dup expr1 expr2) where
   tunnelPT f (Dup a b) = Dup (tunnelPT f a) (tunnelPT f b)
 
 instance (LambdaD expr1, LambdaD expr2) => LambdaD (Dup expr1 expr2) where
-  lamD f =
-    let fa x = unDupA $ f (flip Dup undefined x)
-        fb x = unDupB $ f (Dup undefined x)
-    in Dup (lamD fa) (lamD fb)
+  lamD f = Dup
+    (lamD $ unDupA . f . flip Dup undefined)
+    (lamD $ unDupB . f . Dup undefined)
 
   appD (Dup fa fb) (Dup a b) = Dup (appD fa a) (appD fb b)
 

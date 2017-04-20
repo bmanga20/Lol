@@ -1,18 +1,16 @@
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RebindableSyntax    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+--{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RebindableSyntax      #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
-{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
+--{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
+--{-# OPTIONS_GHC -fno-warn-missing-signatures      #-}
 
 module Crypto.Alchemy.EDSL where
 
@@ -44,20 +42,23 @@ import Crypto.Lol.Types.ZPP -- EAC: I shouldn't need to explicitly import this..
 
 import Data.Type.Natural
 
+-- EAC: We can get rid of signatures once #13524 is fixed (should be in 8.2)
+
 pt1 :: forall t m zp d ptexpr i a .
-  (a ~ Cyc t m zp, Applicative i,
-   AddPT ptexpr, MulPT ptexpr,
+  (a ~ Cyc t m zp, Applicative i, EnvLiftable ptexpr,
+   AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr,
    AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
    RingCtxPT ptexpr d a, Ring a)
-  => (ptexpr i (Add1 d) a) -> (ptexpr i (Add1 d) a) -> (ptexpr i d a)
+  => ptexpr i (Add1 d) a -> ptexpr i (Add1 d) a -> ptexpr i d a
 pt1 a b = addPublicPT 2 $ a *# (a +# b)
 
+-- we give a type signature for easy partial type application
 pt1' :: forall t m zp d ptexpr i a .
   (a ~ Cyc t m zp, Applicative i, EnvLiftable ptexpr,
    AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr,
    AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
    RingCtxPT ptexpr d a, Ring a)
-  => (ptexpr i ('L (Add1 d) ('L (Add1 d) d)) (a -> a -> a))
+  => ptexpr i ('L (Add1 d) ('L (Add1 d) d)) (Cyc t m zp -> Cyc t m zp -> Cyc t m zp)
 pt1' = lam2 $ pt1
 
 pt1'' :: forall t m zp d ptexpr i a .
@@ -65,7 +66,7 @@ pt1'' :: forall t m zp d ptexpr i a .
    AddPT ptexpr, MulPT ptexpr, LambdaD ptexpr, Lit (ptexpr i (Add1 d)),
    AddPubCtxPT ptexpr d a, AdditiveCtxPT ptexpr (Add1 d) a,
    RingCtxPT ptexpr d a, Ring a, LitCtx (ptexpr i (Add1 d)) a)
-  => a -> a -> (ptexpr i d a)
+  => a -> a -> ptexpr i d a
 pt1'' a b = appD (appD pt1' (lit a)) (lit b)
 
 tunn1 :: forall t r u s zp d expr i eru eus.
@@ -77,7 +78,9 @@ tunn1 _ = lam1 $ \x -> tunnelPT' $ tunnelPT' @u x
 
 type Zq q = ZqBasic q Int64
 
--- EAC: perhaps the functions that run the interpreters should only accept an `i ~ Identity`?
+-- EAC: probably would be useful to make a constraint syn
+-- type AddditiveCtxPT' expr d a = (AddPT expr, AdditiveCtxPT expr d a)
+-- and similarly for other associated constraint syns
 
 main :: IO ()
 main = do
@@ -85,11 +88,11 @@ main = do
       (exp2a, exp2b) = dupPT $ pt1'' @CT @F4 @Int64 7 11
 
   -- print the unapplied PT function
-  putStrLn $ runIdentity $ unSPT exp1a
+  putStrLn $ showPT exp1a
   -- apply the PT function to arguments, then print it out
-  putStrLn $ runIdentity $ unSPT exp2a
+  putStrLn $ showPT exp2a
   -- apply the PT function to arguments and evaluate the function
-  putStrLn $ show $ runIdentity $ unID exp2b
+  putStrLn $ show $ evalPT exp2b
   -- compile the un-applied function to CT, then print it out
   (x,_) <- compile
          @'[ '(F4, F8) ]
@@ -99,12 +102,12 @@ main = do
          @Double
          1.0
          exp1b
-  putStrLn $ unSCT x
+  putStrLn $ showCT x
 
   let (exp3a, exp3b) = dupPT $ tunn1 @CT @H0 @H1 @H2 @(Zq PP8) @('T 'Z) Proxy
   -- example with rescale de-duplication when tunneling
   -- print the unapplied PT function
-  putStrLn $ runIdentity $ unSPT $ exp3a
+  putStrLn $ showPT exp3a
   -- compile the up-applied function to CT, then print it out
   (y,_) <- compile
          @'[ '(H0, H0'), '(H1,H1'), '(H2, H2') ]
@@ -116,8 +119,8 @@ main = do
          exp3b
   -- compile once, interpret with multiple ctexprs!!
   let (z1,z2) = dupCT $ runDeepSeq y
-  putStrLn $ unSCT z1
-  putStrLn $ unSCT $ runDupRescale z2
+  putStrLn $ showCT z1
+  putStrLn $ showCT $ runDupRescale z2
 
 type H0 = F8
 type H1 = F4 * F7

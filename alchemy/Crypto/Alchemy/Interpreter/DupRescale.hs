@@ -1,6 +1,5 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE InstanceSigs        #-}
---{-# LANGUAGE RecordSyntax        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}

@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds    #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Crypto.Alchemy.Language.AddPT where
 
@@ -24,7 +23,6 @@ class AddPT expr where
   (+#) :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp, Applicative i) => expr i d a -> expr i d a -> expr i d a
 
   negPT :: (AdditiveCtxPT expr d a, a ~ Cyc t m zp, Applicative i) => expr i d a -> expr i d a
-
 
 (-#) :: (AddPT expr, AdditiveCtxPT expr d a, a ~ Cyc t m zp, Applicative i)
      => expr i d a -> expr i d a -> expr i d a

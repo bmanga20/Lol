@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Crypto.Alchemy.Interpreter.DupCT where
+module Crypto.Alchemy.Interpreter.DupCT (Dup, dupCT) where
 
 import Crypto.Alchemy.Language.CT
 import Crypto.Alchemy.Language.Lam

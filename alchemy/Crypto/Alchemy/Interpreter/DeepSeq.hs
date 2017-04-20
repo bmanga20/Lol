@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Crypto.Alchemy.Interpreter.DeepSeq where
+module Crypto.Alchemy.Interpreter.DeepSeq (DeepSeq, runDeepSeq) where
 
 import Control.DeepSeq
 import Crypto.Alchemy.Language.CT

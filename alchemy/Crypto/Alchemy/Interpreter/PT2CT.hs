@@ -1,28 +1,19 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTSyntax            #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs          #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE RebindableSyntax      #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
-
-{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
+{-# LANGUAGE ApplicativeDo        #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE GADTSyntax           #-}
+{-# LANGUAGE InstanceSigs         #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE PolyKinds            #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Crypto.Alchemy.Interpreter.PT2CT where
 
-import Control.Applicative
-import Control.Monad.Identity
 import Control.Monad.Random
 import Control.Monad.Reader
 import Control.Monad.State.Strict

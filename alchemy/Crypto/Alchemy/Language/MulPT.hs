@@ -1,7 +1,5 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds    #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Crypto.Alchemy.Language.MulPT where
 

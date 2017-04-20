@@ -1,6 +1,5 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DataKinds    #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Crypto.Alchemy.Language.TunnelPT where
 

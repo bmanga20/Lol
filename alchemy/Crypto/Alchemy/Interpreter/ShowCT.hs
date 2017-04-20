@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Crypto.Alchemy.Interpreter.ShowCT where
+module Crypto.Alchemy.Interpreter.ShowCT (ShowCT, showCT) where
 
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
@@ -8,8 +8,8 @@ import Crypto.Alchemy.Language.CT
 import Crypto.Lol (Cyc)
 import Crypto.Lol.Applications.SymmSHE (CT)
 
-unSCT :: ShowCT a -> String
-unSCT (SCT a) = a 0
+showCT :: ShowCT a -> String
+showCT (SCT a) = a 0
 
 data ShowCT (a :: *) = SCT (Int -> String)
 
