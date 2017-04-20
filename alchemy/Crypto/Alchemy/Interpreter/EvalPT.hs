@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Crypto.Alchemy.Interpreter.PTEval (ID, evalPT) where
+module Crypto.Alchemy.Interpreter.EvalPT (ID, evalPT) where
 
 import Control.Applicative
 import Control.Monad.Identity
@@ -26,7 +26,7 @@ evalPT (ID a) = runIdentity a
 newtype ID i (d :: Depth) a = ID {unID :: i a} deriving (Show, Eq, Functor)
 
 lift2 :: (Applicative i) => (a -> b -> c) -> (ID i d a) -> (ID i d' b) -> (ID i d'' c)
-lift2 f a b = ID $ f <$> (unID a) <*> (unID b)
+lift2 f a b = ID $ f <$> unID a <*> unID b
 
 -- | Metacircular plaintext symantics.
 instance AddPT ID where

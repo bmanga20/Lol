@@ -3,11 +3,11 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Crypto.Alchemy.Interpreter.CTEval (I, evalCT) where
+module Crypto.Alchemy.Interpreter.EvalCT (I, evalCT) where
 
+import Crypto.Alchemy.Language.CT
 import Crypto.Alchemy.Language.Lam
 import Crypto.Alchemy.Language.Lit
-import Crypto.Alchemy.Language.CT
 import Crypto.Lol
 import Crypto.Lol.Applications.SymmSHE as SHE
 
