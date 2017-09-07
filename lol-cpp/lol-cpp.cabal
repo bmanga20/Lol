@@ -87,7 +87,7 @@ library
     Crypto.Lol.Cyclotomic.Tensor.CPP.Instances
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     constraints < 0.10,
     deepseq >= 1.4.1.1 && < 1.5,
     lol >= 0.6.0.0 && < 0.8,
@@ -109,7 +109,7 @@ Benchmark bench-lol-cpp
   ghc-options: -O2 -funfolding-creation-threshold=15000 -funfolding-use-threshold=1000
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     DRBG < 0.6,
     lol >= 0.7.0.0 && < 0.8,
     lol-cpp
@@ -126,7 +126,7 @@ Benchmark bench-lol-apps-cpp
   ghc-options: -O2 -funfolding-creation-threshold=15000 -funfolding-use-threshold=1000
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     DRBG < 0.6,
     lol >= 0.7.0.0 && < 0.8,
     lol-apps >= 0.2.1 && < 0.3,
@@ -142,7 +142,7 @@ test-suite test-lol-cpp
   ghc-options:      -threaded -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol >= 0.7.0.0 && < 0.8,
     lol-cpp,
     test-framework < 0.9
@@ -158,7 +158,7 @@ test-suite test-lol-apps-cpp
   ghc-options:      -threaded -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol >= 0.7.0.0 && < 0.8,
     lol-apps >= 0.2.1 && < 0.3,
     lol-cpp,
@@ -175,7 +175,7 @@ executable homomprf-cpp
   ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol-apps >= 0.2.1 && < 0.3,
     lol-cpp
 
@@ -190,7 +190,7 @@ executable khprf-cpp
   ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol-apps >= 0.2.1 && < 0.3,
     lol-cpp
 
@@ -205,6 +205,6 @@ executable symmshe-cpp
   ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol-apps >= 0.2.1 && < 0.3,
     lol-cpp

@@ -73,7 +73,7 @@ library
     Crypto.Lol.Cyclotomic.Tensor.Repa.RTCommon
 
   build-depends:
-    base >= 4.9 && < 5,
+    base >= 4.9 && < 4.11,
     constraints < 0.10,
     data-default >= 0.3.0 && < 0.8,
     deepseq >= 1.4.1.1 && < 1.5,
@@ -83,7 +83,7 @@ library
     numeric-prelude >= 0.4.2 && < 0.5,
     reflection >= 1.5.1 && < 2.2,
     repa >=3.4 && < 3.5,
-    singletons >= 1.1.2.1 && < 2.3,
+    singletons >= 1.1.2.1 && < 2.3.2,
     vector>=0.11 && < 0.13,
     vector-th-unbox >= 0.2.1.0 && < 0.3
 
@@ -100,7 +100,7 @@ Benchmark bench-lol-repa
   ghc-options: -fsimpl-tick-factor=115
 
   build-depends:
-    base >= 4.9 && < 5,
+    base >= 4.9 && < 4.11,
     DRBG < 0.6,
     lol >= 0.7.0.0 && < 0.8,
     lol-repa
@@ -118,7 +118,7 @@ Benchmark bench-lol-apps-repa
   ghc-options: -fsimpl-tick-factor=115
 
   build-depends:
-    base >= 4.9 && < 5,
+    base >= 4.9 && < 4.11,
     DRBG < 0.6,
     lol >= 0.7.0.0 && < 0.8,
     lol-apps >= 0.2.1 && < 0.3,
@@ -134,7 +134,7 @@ test-suite test-lol-repa
   ghc-options:      -threaded -O2
 
   build-depends:
-    base >= 4.9 && < 5,
+    base >= 4.9 && < 4.11,
     lol >= 0.7.0.0 && < 0.8,
     lol-repa,
     test-framework < 0.9
@@ -150,7 +150,7 @@ test-suite test-lol-apps-repa
   ghc-options:      -threaded -O2
 
   build-depends:
-    base >= 4.9 && < 5,
+    base >= 4.9 && < 4.11,
     lol >= 0.7.0.0 && < 0.8,
     lol-apps >= 0.2.1 && < 0.3,
     lol-repa,
@@ -167,7 +167,7 @@ executable homomprf-repa
   ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol-apps >= 0.2.1 && < 0.3,
     lol-repa
 
@@ -182,7 +182,7 @@ executable khprf-repa
   ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol-apps >= 0.2.1 && < 0.3,
     lol-repa
 
@@ -197,6 +197,6 @@ executable symmshe-repa
   ghc-options: -threaded -rtsopts -O2
 
   build-depends:
-    base >= 4.9 && < 4.10,
+    base >= 4.9 && < 4.11,
     lol-apps >= 0.2.1 && < 0.3,
     lol-repa
