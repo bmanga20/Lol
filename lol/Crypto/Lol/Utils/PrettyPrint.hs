@@ -11,7 +11,6 @@ Portability : POSIX
 Pretty-printing for benchmark results.
 -}
 
-{-# LANGUAGE BangPatterns    #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
 
@@ -38,7 +37,7 @@ import Criterion.Types
 
 import qualified Data.Map as Map
 
-import Statistics.Resampling.Bootstrap (Estimate(..))
+import Statistics.Types (Estimate(..))
 
 -- | Verbosity of benchmark output.
 data Verb = Progress  -- ^ prints a \'.\' when each benchmark completes
@@ -100,16 +99,19 @@ summarizeBenchReports OptsInternal{..} b = snd <$> go (0, []) ("", b)
           -- get a single report
           when (verb == Abridged || verb == Full) $ liftIO $ putStr $ "benchmark " ++ benchName
           when (verb == Full) $ liftIO $ putStrLn ""
-          (Analysed rpt) <- runAndAnalyseOne rptIdx benchName b'
-          when (verb == Progress) $ liftIO $ putStr "."
-          when (verb == Abridged) $ liftIO $ putStrLn $ "..." ++ secs (getRuntime rpt)
-          -- return the report
-          return (rptIdx, rpt:reports)
+          dr <- runAndAnalyseOne rptIdx benchName b'
+          case dr of
+            (Measurement _ _ _) -> error "PrettyPrint Measurement" -- for Wmissing-monadfail-instances
+            (Analysed rpt) -> do
+              when (verb == Progress) $ liftIO $ putStr "."
+              when (verb == Abridged) $ liftIO $ putStrLn $ "..." ++ secs (getRuntime rpt)
+              -- return the report
+              return (rptIdx, rpt:reports)
                                                               | otherwise = do
-          -- if we don't want to run this benchmark, print the name anyway.
-          liftIO $ putStrLn benchName
-          -- and return the input
-          return r
+              -- if we don't want to run this benchmark, print the name anyway.
+              liftIO $ putStrLn benchName
+              -- and return the input
+              return r
       where benchName = addPrefix benchPrefix desc
     go r (benchPrefix, (BenchGroup desc bs)) =
       let lvlName = addPrefix benchPrefix desc -- append the description to the prefix

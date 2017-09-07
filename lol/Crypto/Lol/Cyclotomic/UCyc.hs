@@ -553,6 +553,7 @@ crtSet =
       -- time), switching back to pow basis each time so that we don't
       -- lose precision!  (This fixes a bug witnessed for moderate
       -- values of e.)
+      expon :: (Fact m'bar) => Int -> UCyc t m'bar rep r -> UCyc t m'bar P r
       expon 1  = toPow
       expon e' = toPowCE . (^p) . toCRT . expon (e'-1)
       pp  = Proxy::Proxy p
