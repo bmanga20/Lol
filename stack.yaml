@@ -16,7 +16,10 @@
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
 
-resolver: nightly-2017-09-06
+resolver: nightly-2017-10-10
+system-ghc: true
+# Lol will not compile with 8.2.1!
+# ONLY WORKS WITH GHC 8.2.2 or newer!
 compiler-check: newer-minor
 
 # User packages to be built.
