@@ -3,9 +3,9 @@
 # For interactive development, you shouldn't need to explicitly use this file;
 # it is called from the ghci script included with this repository.
 
-CXX      ?= g++
+CXX      = g++
 AR       ?= ar
-CXXFLAGS ?= -Wall -O3 -std=c++11 -fPIC
+CXXFLAGS = -Wall -O3 -std=c++11 -fPIC
 
 CSRCPATH = Crypto/Lol/Cyclotomic/Tensor/CPP
 OBJPATH = lib
