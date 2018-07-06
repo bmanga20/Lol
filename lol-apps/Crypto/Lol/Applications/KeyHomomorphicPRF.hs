@@ -119,14 +119,15 @@ root'  (I a _ _) = a
 left'  (I _ l _) = l
 right' (I _ _ r) = r
 
-root :: PRFState             t n gad a -> BitStringMatrix t a
+root :: PRFState t n gad a -> BitStringMatrix t a
 root = root' . state'
 
 -- | Compute PRF state for a given tree and input, which includes \(
 -- \mathbf{A}_T(x) \) and all intermediate values (see Definition 2.1
 -- of [BP14]).
-updateState' :: forall gad rq t n . Decompose gad rq
-  => SFBT t                     -- | singleton for the tree \( T \) 
+updateState' :: forall gad rq t n .
+  (Decompose gad rq, Reduce (DecompOf rq) rq)
+  => SFBT t                     -- | singleton for the tree \( T \)
   -> PRFParams n gad rq
   -> Maybe (PRFState' t n gad rq)
   -> BitString (SizeFBT t)      -- | input \( x \)
@@ -143,7 +144,7 @@ updateState' t p st x = case t of
                      ar'  = reduce <$> proxy (decomposeMatrix ar) (Proxy :: Proxy gad)
                  in I (BSM x (al*ar')) stl str
 
-updateState :: Decompose gad rq
+updateState :: (Decompose gad rq, Reduce (DecompOf rq) rq)
   => SFBT t
   -> Either (PRFParams n gad rq) (PRFState t n gad rq)
   -> BitString (SizeFBT t)
@@ -162,7 +163,7 @@ prfCore :: (Ring rq, Rescale rq rp)
 prfCore s st = rescale <$> (key s) * matrix (root st)
 
 -- | "Fresh" PRF computation, with no precomputed 'PRFState'.
-prf :: (Rescale rq rp, Decompose gad rq)
+prf :: (Rescale rq rp, Decompose gad rq, Reduce (DecompOf rq) rq)
   => SFBT t                     -- | singleton for the tree \( T \)
   -> PRFParams n gad rq         -- | public parameters
   -> PRFKey n rq                -- | secret key \( s \)
@@ -171,7 +172,7 @@ prf :: (Rescale rq rp, Decompose gad rq)
 prf = (fmap . fmap . fmap) fst . prfState
 
 -- | "Fresh" PRF computation that also outputs the resulting 'PRFState'.
-prfState :: (Rescale rq rp, Decompose gad rq)
+prfState :: (Rescale rq rp, Decompose gad rq, Reduce (DecompOf rq) rq)
   => SFBT t                     -- | singleton for the tree \( T \)
   -> PRFParams n gad rq         -- | public parameters
   -> PRFKey n rq                -- | secret key \( s \)
@@ -183,7 +184,7 @@ prfState t p s x = let st = updateState t (Left p) x in (prfCore s st, st)
 -- output is in a monadic context that keeps a 'PRFState' state for
 -- efficient amortization across calls.
 prfAmortized ::
-  (Rescale rq rp, Decompose gad rq,
+  (Rescale rq rp, Decompose gad rq, Reduce (DecompOf rq) rq,
    MonadState (Maybe (PRFState t n gad rq)) m)
   => SFBT t                     -- | singleton for the tree \( T \)
   -> PRFParams n gad rq         -- | public parameters

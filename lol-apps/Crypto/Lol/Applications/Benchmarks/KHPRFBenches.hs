@@ -58,8 +58,9 @@ type Complete4 = 'Intern Complete3 Complete3
 type Complete5 = 'Intern Complete4 Complete4
 
 khprfBenches :: forall ts rnd gad .
-    (MonadRandom rnd, Random (Rq ts), Rescale (Rq ts) (Rp ts),
-     Decompose gad (Rq ts), Reflects N Int, Gadget gad (Rq ts), NFData (Rp ts))
+  (MonadRandom rnd, Random (Rq ts), Rescale (Rq ts) (Rp ts),
+   Decompose gad (Rq ts), Reduce (DecompOf (Rq ts)) (Rq ts), 
+   Reflects N Int, Gadget gad (Rq ts), NFData (Rp ts))
   => Proxy ts -> Proxy gad -> rnd Benchmark
 khprfBenches _ _ = do
   key :: PRFKey N (Rq ts) <- genKey
@@ -80,14 +81,15 @@ khprfBenches _ _ = do
     ]
 
 prfBench :: forall t n gad rq rp .
-    (Rescale rq rp, Decompose gad rq, FBTC t, NFData rp)
+  (Rescale rq rp, Decompose gad rq, Reduce (DecompOf rq) rq,
+   FBTC t, NFData rp)
   => Proxy rp
   -> SFBT t -> PRFParams n gad rq -> PRFKey n rq -> BitString (SizeFBT t)
   -> Benchmarkable
 prfBench _ t p s x = nf (prf t p s :: _ -> Matrix rp) x
 
 prfAmortizedBench :: forall t n gad rq rp .
-    (Rescale rq rp, Decompose gad rq, NFData rp)
+    (Rescale rq rp, Decompose gad rq, Reduce (DecompOf rq) rq, NFData rp)
   => Proxy rp
   -> SFBT t -> PRFParams n gad rq -> PRFKey n rq -> [BitString (SizeFBT t)]
   -> Benchmarkable

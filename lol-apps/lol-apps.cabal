@@ -78,6 +78,7 @@ library
     MonadRandom >= 0.2 && < 0.6,
     base >= 4.9 && < 4.10,
     containers < 0.6,
+    criterion >= 1.1.4.0 && < 1.1.5,
     crypto-api < 0.14,
     deepseq >= 1.4.1.1 && < 1.5,
     filepath < 1.5,

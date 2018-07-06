@@ -12,6 +12,7 @@ Example usage of 'Crypto.Lol.Applications.KeyHomomorphicPRF'.
 -}
 
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
