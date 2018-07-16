@@ -17,6 +17,8 @@ import Crypto.Lol
 
 import Data.Maybe
 
+import MathObj.Matrix as M
+
 type Zq q = ZqBasic q Int64
 type MatrixZq q = Matrix (Zq q)
 
