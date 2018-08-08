@@ -19,59 +19,56 @@ Chosen Ciphertext-Secure Encryption from Section 6.3 of
 module Crypto.Lol.Applications.CCASecureEncryption where
 
 import Crypto.Lol
-import Crypto.Lol.Applications.TrapdoorGeneration
+import Crypto.Lol.Applications.Trapdoor as TD
 
 import Data.Set
 
 import MathObj.Matrix as M
 
-type Zq q = ZqBasic q Int64
-type U q n = Set (Vector q^n (Zq q))
+type SecretKey gad rq = Trapdoor gad rq
 
-type SecretKey = Trapdoor
+data PublicKey gad ff rq     = PK'  { a     :: TD.PublicKey gad ff rq
+                                    , u     :: Matrix rq }
+newtype Message rp           = Msg  { unMsg :: rq }
+data    Ciphertext gad ff rq = CTxt { h     :: Tag ff
+                                    , b     :: LWEOutput gad rq
+                                    , b'    :: LWEOutput gad rq }
 
-data Ring f q n = {fx :: Vector n (Zq q)}
+gen :: (r ~ LiftOf rq, Reduce r rq, Ring rq, Module ff rq,
+        Gadget gad rq, RoundedGaussianCyc cm r, MonadRandom rnd)
+  => PublicParam rq
+  -> rnd (SecretKey gad rq, PublicKey gad ff rq)
+gen aBar = do
+  (r, a) <- genTrap aBar $ Tag zero
+  u      <- gaussianMtx 1 $ cols    -- How to determine number of columns in U?
+  return (r, PK' a u)
 
-gen :: forall n rq rnd . (MonadRandom rnd, PosC n)
-  => rnd (SecretKey gad rq, PublicKey gad rq)
-gen = let rowDim = sPosToInt $ sing :: Sing n
-      in genTrap Nothing $ zeroMatrix rowDim rowDim
+enc :: (Rescale rp rq, MonadRandom rnd, Random rq)
+  => PublicKey gad ff rq -> Message rp -> rnd (Ciphertext gad ff rq)
+enc (PK' a u) (Msg m) = do
+  h  <- getRandom
+  s  <- rndSecret
+  b  <- lweRand a h s
+  b' <- lweRand u h s
+  return CTxt h b $ b' + rescale m
 
-enc :: PublicKey -> Message -> (U q n, Message)
-enc pk m = let u = getRandom
-               au = pk + matExtend (zeroMatrix n m') $ (hom u) * g
-               s = randomMtx 1 n
-               eBar =
-               eOne =
-               e = matExtend eBar eOne
-               mEncoded = matExtend (zeroMatrix 1 (m - nk)) $ encode m
-               b = 2 * s * au + e + mEncoded
-           in (u, b)
-
-dec ::
+dec :: (Field ff, Ring rq, Correct gad rq, Module ff rq,
+        Rescale rq rp)
+  => PublicKey gad ff rq -> SecretKey gad rq -> Ciphertext gad ff rq
+  -> Maybe (Message rp)
+dec (PK' a u) sk (CTxt h b b') =
+  let (Sec s, e) = lweInv a sk h b
+      plaintext  = Msg $ rescale $ b' - scale s u
+      shortError = errorSqNorm e < threshold
+      nonZeroTag = h ~= zero
+  in if nonZeroTag && shortError then Just plaintext else Nothing
 
 
-encode :: Matrix Int -> Matrix Bool -> Matrix Int
-encode s m = if numRows s ~= numColumns s
-                || numColumns s ~= numRows m
-                || numColumns m ~= 1
-             then error "encode: mismatched matrix dimensions"
-             else encode' s m
+-- SUBROUTINES --
 
-encode' :: Matrix Int -> Matrix Bool -> Matrix Int
-encode' s m = let m' = map (\x -> if x then 1 else 0) $ head $ columns m
-              in s * m'
+errorSqNorm :: ((cm z) ~ LiftOf (cm zq), LiftCyc cm zq, GSqNormCyc cm z)
+  => LWEError cm zq -> z
+errorSqNorm (Err eBar e') = let sqNorm = sum $ fmap (gSqNorm . liftCyc) x
+                            in sqNorm eBar + sqNorm e'
 
--- | Injective ring homomorphism from @R = Z_q[x]/f(x)@ to @Z_q^{n \times n}@
--- @hom a@ represents multiplication by @a \in R@
-hom :: RingElt -> MatrixZq q
-hom a = let n' = sPosToInt $ sing :: Sing n
-            a' =
-            mtxCols = take n' $ iterate multByX a'
-        in transpose $ M.fromList n' n' $ concat mtxCols
-
-multByX :: [Zq q] -> [Zq q]
-multByX a = let f    =
-                base = 0 : init a
-                red  = map (* (last a)) f
-          in zipWith (-) base red
+threshold ::
