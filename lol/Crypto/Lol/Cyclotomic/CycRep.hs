@@ -25,6 +25,7 @@ The acceptable range of inputs for each function is determined by
 the internal linear transforms and other operations it performs.
 -}
 
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -38,6 +39,7 @@ the internal linear transforms and other operations it performs.
 {-# LANGUAGE RebindableSyntax           #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -199,7 +201,7 @@ instance (Fact m, CRTElt t r) => Additive.C (CycRepEC t m r) where
   _ - _ = error "CycRep (-) internal error: mixed CRTC/CRTE"
 
   negate (Right (CRTC s v)) = Right $ CRTC s $ fmapI negate v
-  negate (Left (CRTE s v)) = Left $ CRTE s $ fmapI negate v
+  negate (Left (CRTE s v))  = Left $ CRTE s $ fmapI negate v
 
   {-# INLINABLE zero #-}
   {-# INLINABLE (+) #-}
@@ -362,7 +364,7 @@ cosetGaussian :: forall t m zp z v rnd .
   => v -> CycRep t D m zp -> rnd (CycRep t D m z)
 {-# INLINABLE cosetGaussian #-}
 cosetGaussian =
-  let pval = fromIntegral $ proxy modulus (Proxy::Proxy zp)
+  let pval = fromIntegral $ modulus @zp
   in \ svar (Dec c) ->
     Dec . zipWithI roundCoset c <$>
     (tweakedGaussianDec (svar*pval*pval) :: rnd (t m Double))
@@ -383,7 +385,7 @@ embedCRTC :: (m `Divides` m', CRTElt t r)
 embedCRTC x@(CRTC s v) =
   case crtSentinel of
     -- go to CRTC if valid, else go to Pow
-    Left  _ -> Left $ embedPow $ toPow x
+    Left  _  -> Left $ embedPow $ toPow x
     Right s' -> Right $ CRTC s' $ embedCRTCS s s' v
 
 -- | Similar to 'embedCRTC'.  (The output is an 'Either' because the
@@ -442,24 +444,25 @@ coeffsDec :: (TensorPowDec t r, m `Divides` m') => CycRep t D m' r -> [CycRep t 
 coeffsDec (Dec v) = LP.map Dec $ coeffs v
 
 -- | The relative powerful basis of \(\O_{m'} / \O_m\).
-powBasis :: (TensorPowDec t r, m `Divides` m') => Tagged m [CycRep t P m' r]
+powBasis :: forall m m' t r .
+  (TensorPowDec t r, m `Divides` m') => [CycRep t P m' r]
 {-# INLINABLE powBasis #-}
-powBasis = (Pow <$>) <$> powBasisPow
+powBasis = fmap Pow $ untag $ powBasisPow @t @r @m
 
 -- | The relative mod-\(r\) CRT set of \(\O_{m'} / \O_m\),
 -- represented with respect to the powerful basis (which seems to be
 -- the best choice for typical use cases).
-crtSet :: forall t m m' r p mbar m'bar .
+crtSet :: forall m m' p mbar m'bar t r .
            (m `Divides` m', ZPP r, p ~ CharOf (ZpOf r), mbar ~ PFree p m, m'bar ~ PFree p m',
             CRTElt t r, TensorCRTSet t (ZpOf r))
-          => Tagged m [CycRep t P m' r]
+          => [CycRep t P m' r]
 {-# INLINABLE crtSet #-}
 crtSet =
   -- CJP: consider using traceEvent or traceMarker
   --DT.trace ("CycRep.crtSet: m = " ++
   --          show (proxy valueFact (Proxy::Proxy m)) ++ ", m'= " ++
   --          show (proxy valueFact (Proxy::Proxy m'))) $
-  let (p,e) = proxy modulusZPP (Proxy::Proxy r)
+  let (p,e) = modulusZPP @r
       -- raise to the p^(e-1) power iteratively (one factor of p at a
       -- time), switching back to pow basis each time so that we don't
       -- lose precision!  (This fixes a bug witnessed for moderate
@@ -469,11 +472,9 @@ crtSet =
       pp  = Proxy::Proxy p
       pm  = Proxy::Proxy m
       pm' = Proxy::Proxy m'
-  in retag (fmap (embedPow .
-                  expon e .
-                  Dec . fmapI liftZp) <$>
-            (crtSetDec :: Tagged mbar [t m'bar (ZpOf r)]))
-     \\ pFreeDivides pp pm pm' \\ pSplitTheorems pp pm \\ pSplitTheorems pp pm'
+  in (embedPow . expon e . Dec . fmapI liftZp) <$>
+     (untag $ crtSetDec @t @_ @mbar :: [t m'bar (ZpOf r)])
+     \\ pFreeDivides @p @m @m' \\ pSplitTheorems @p @m \\ pSplitTheorems @p @m'
 
 
 --------- Changing representation ------------------
@@ -522,7 +523,7 @@ instance ToCRT (CycRep t) E r where
 -- | Convenient version of 'toPow' for 'Either' CRT basis type.
 toPowCE :: (Fact m, CRTElt t r) => CycRepEC t m r -> CycRep t P m r
 {-# INLINABLE toPowCE #-}
-toPowCE (Left u) = toPow u
+toPowCE (Left u)  = toPow u
 toPowCE (Right u) = toPow u
 
 
@@ -586,7 +587,6 @@ instance Traversable (CycRep t D m) => Foldable (CycRep t D m) where
 instance (Fact m, ForallFact1 Foldable t) => Foldable (CycRep t C m) where
   foldr f b (CRTC _ v) = foldr f b v
                          \\ (entailFact1 :: Fact m :- Foldable (t m))
-
 
 instance (Fact m, ForallFact1 Traversable t,
           ForallFact1 Applicative t) -- satisfy superclass

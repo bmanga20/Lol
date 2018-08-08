@@ -34,6 +34,7 @@ The acceptable range of inputs for each function is determined by
 the internal linear transforms and other operations it performs.
 -}
 
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -49,6 +50,7 @@ the internal linear transforms and other operations it performs.
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -73,8 +75,8 @@ import           Crypto.Lol.Cyclotomic.CycRep   hiding (coeffsDec,
 import qualified Crypto.Lol.Cyclotomic.CycRep   as R
 import           Crypto.Lol.Cyclotomic.Language hiding (Dec, Pow)
 import qualified Crypto.Lol.Cyclotomic.Language as L
-import           Crypto.Lol.Cyclotomic.Tensor   (TensorCRTSet,
-                                                 TensorGSqNorm,
+import           Crypto.Lol.Cyclotomic.Tensor   (TensorCRT, TensorCRTSet,
+                                                 TensorG, TensorGSqNorm,
                                                  TensorGaussian,
                                                  TensorPowDec)
 import           Crypto.Lol.Gadget
@@ -94,6 +96,7 @@ import           Control.Monad.Random   hiding (lift)
 import           Data.Coerce
 import           Data.Constraint        ((:-), Dict (..), (\\))
 import qualified Data.Constraint        as C
+import           Data.Foldable          (Foldable)
 import           Data.Traversable
 import           Language.Haskell.TH
 
@@ -212,7 +215,18 @@ instance (UnCyc t a, UnCyc t b, IFunctor t, IFElt t a, IFElt t b, IFElt t (a,b))
   unCycPow (CycPair a b) = zipWithI (,) (unCycPow a) (unCycPow b)
   unCycDec (CycPair a b) = zipWithI (,) (unCycDec a) (unCycDec b)
 
----------- FunctorCyc instances ----------
+---------- Category theoretic instances ----------
+
+instance (Fact m, CRTElt t r,
+          Traversable (CycRep t P m), Traversable (CycRep t D m), ForallFact1 Foldable t)
+    => FoldableCyc (CycG t m) r where
+  foldrCyc (Just L.Pow) f acc (Pow u) = foldr f acc u
+  foldrCyc (Just L.Dec) f acc (Dec u) = foldr f acc u
+  foldrCyc Nothing f acc c = foldrCyc (Just L.Pow) f acc c
+  foldrCyc powbas@(Just L.Pow) f acc c@(Dec u) = foldrCyc powbas f acc (toPow' c)
+  foldrCyc decbas@(Just L.Dec) f acc c@(Pow u) = foldrCyc decbas f acc (toDec' c)
+  foldrCyc bas f acc c@(CRT u) = foldrCyc bas f acc (toPow' c)
+  foldrCyc bas f acc (Sub u) = foldrCyc bas f acc u
 
 instance (Fact m, CRTElt t a, IFunctor t, IFElt t a, IFElt t b)
   => FunctorCyc (CycG t m) a b where
@@ -228,12 +242,12 @@ instance (Fact m, CRTElt t a, IFunctor t, IFElt t a, IFElt t b)
 instance (Fact m, ZeroTestable r, CRTElt t r, ForallFact2 ZeroTestable.C t r)
   => ZeroTestable.C (CycG t m r) where
   isZero x = case x of
-    (Pow u) -> isZero u
-    (Dec u) -> isZero u
+    (Pow u)         -> isZero u
+    (Dec u)         -> isZero u
     (CRT (Right u)) -> isZero u
-    c@(CRT _) -> isZero $ toPow' c
-    (Scalar c) -> isZero c
-    (Sub c) -> isZero c
+    c@(CRT _)       -> isZero $ toPow' c
+    (Scalar c)      -> isZero c
+    (Sub c)         -> isZero c
     \\ (entailFact2 :: Fact m :- ZeroTestable.C (t m r))
 
 deriving instance ZeroTestable (CycG t m Double) => ZeroTestable.C (Cyc t m Double)
@@ -267,7 +281,7 @@ instance (Eq r, Fact m, CRTElt t r, ForallFact2 Eq t r) => Eq (CycG t m r) where
   -- EAC: would like to convert c2 to basis of c1 *before* embedding
   (Sub (c1 :: CycG t l1 r)) == (Sub (c2 :: CycG t l2 r)) =
     (embed' c1 :: CycG t (FLCM l1 l2) r) == embed' c2
-    \\ lcmDivides (Proxy::Proxy l1) (Proxy::Proxy l2)
+    \\ lcmDivides @l1 @l2
 
   -- some other relatively efficient comparisons
   (Scalar c1) == (Pow u2) = scalarPow c1 == u2
@@ -323,7 +337,7 @@ instance (Fact m, CRTElt t r, ZeroTestable r) => Additive.C (CycG t m r) where
   -- EAC: would like to convert c2 to basis of c1 before embedding
   (Sub (c1 :: CycG t m1 r)) + (Sub (c2 :: CycG t m2 r)) =
     (Sub $ (embed' c1 :: CycG t (FLCM m1 m2) r) + embed' c2)
-    \\ lcm2Divides (Proxy::Proxy m1) (Proxy::Proxy m2) (Proxy::Proxy m)
+    \\ lcm2Divides @m1 @m2 @m
 
   -- SCALAR PLUS SOMETHING ELSE
 
@@ -353,11 +367,11 @@ instance (Fact m, CRTElt t r, ZeroTestable r) => Additive.C (CycG t m r) where
   (Dec u1) + (CRT u2) = CRT $ toCRT u1 + u2
 
   {-# INLINABLE negate #-}
-  negate (Pow u) = Pow $ negate u
-  negate (Dec u) = Dec $ negate u
-  negate (CRT u) = CRT $ negate u
+  negate (Pow u)    = Pow $ negate u
+  negate (Dec u)    = Dec $ negate u
+  negate (CRT u)    = CRT $ negate u
   negate (Scalar c) = Scalar (negate c)
-  negate (Sub c) = Sub $ negate c
+  negate (Sub c)    = Sub $ negate c
 
 deriving instance Additive (CycG t m Double) => Additive.C (Cyc t m Double)
 deriving instance Additive (CycG t m Int64) => Additive.C (Cyc t m Int64)
@@ -441,7 +455,7 @@ instance (Fact m, CRTElt t r, ZeroTestable r) => Ring.C (CycG t m r) where
   (Sub (c1 :: CycG t m1 r)) * (Sub (c2 :: CycG t m2 r)) =
     -- re-wrap c1, c2 as Subs of the composition, and force them to CRT
     (Sub $ (toCRT' $ Sub c1 :: CycG t (FLCM m1 m2) r) * toCRT' (Sub c2))
-    \\ lcm2Divides (Proxy::Proxy m1) (Proxy::Proxy m2) (Proxy::Proxy m)
+    \\ lcm2Divides @m1 @m2 @m
 
   -- ELSE: work in appropriate CRT rep
   c1 * c2 = toCRT' c1 * toCRT' c2
@@ -543,19 +557,19 @@ deriving instance (Ring (GF (ZqBasic q z) d),
 
 instance (Fact m, CRTElt t r, ZeroTestable r, IntegralDomain r)
   => Cyclotomic (CycG t m r) where
-  mulG (Pow u) = Pow $ R.mulGPow u
-  mulG (Dec u) = Dec $ R.mulGDec u
-  mulG (CRT (Left u)) = Pow $ R.mulGPow $ toPow u -- go to Pow for precision
+  mulG (Pow u)         = Pow $ R.mulGPow u
+  mulG (Dec u)         = Dec $ R.mulGDec u
+  mulG (CRT (Left u))  = Pow $ R.mulGPow $ toPow u -- go to Pow for precision
   mulG (CRT (Right u)) = CRT $ Right $ R.mulGCRTC u
-  mulG c@(Scalar _) = mulG $ toCRT' c
-  mulG (Sub c) = mulG $ embed' c   -- must go to full ring
+  mulG c@(Scalar _)    = mulG $ toCRT' c
+  mulG (Sub c)         = mulG $ embed' c   -- must go to full ring
 
-  divG (Pow u) = Pow <$> R.divGPow u
-  divG (Dec u) = Dec <$> R.divGDec u
-  divG (CRT (Left u)) = Pow <$> R.divGPow (toPow u) -- go to Pow for precision
+  divG (Pow u)         = Pow <$> R.divGPow u
+  divG (Dec u)         = Dec <$> R.divGDec u
+  divG (CRT (Left u))  = Pow <$> R.divGPow (toPow u) -- go to Pow for precision
   divG (CRT (Right u)) = Just $ (CRT . Right) $ R.divGCRTC u
-  divG c@(Scalar _) = divG $ toCRT' c
-  divG (Sub c) = divG $ embed' c  -- must go to full ring
+  divG c@(Scalar _)    = divG $ toCRT' c
+  divG (Sub c)         = divG $ embed' c  -- must go to full ring
 
   advisePow = toPow'
   adviseDec = toDec'
@@ -642,7 +656,7 @@ instance (CRTElt t r, ZeroTestable r, IntegralDomain r) -- ZT, ID for superclass
             => CycG t m r -> CycG t m' r
   embed (Scalar c) = Scalar c           -- keep as scalar
   embed (Sub (c :: CycG t l r)) = Sub c -- keep as subring element
-    \\ transDivides (Proxy::Proxy l) (Proxy::Proxy m) (Proxy::Proxy m')
+    \\ transDivides @l @m @m'
   embed c = Sub c
 
   twace :: forall t m m' r .
@@ -653,9 +667,10 @@ instance (CRTElt t r, ZeroTestable r, IntegralDomain r) -- ZT, ID for superclass
   twace (CRT u) = either (cycPE . twaceCRTE) (cycPC . twaceCRTC) u
   twace (Scalar u) = Scalar u
   twace (Sub (c :: CycG t l r)) = Sub (twace c :: CycG t (FGCD l m) r)
-                                  \\ gcdDivides (Proxy::Proxy l) (Proxy::Proxy m)
+                                  \\ gcdDivides @l @m
 
-  powBasis = (Pow <$>) <$> R.powBasis
+  powBasis :: forall m m' a . (m `Divides` m') => Tagged m [CycG t m' r]
+  powBasis = tag $ Pow <$> R.powBasis @m
 
   coeffsCyc L.Pow c' = Pow <$> R.coeffsPow (unCycGPow c')
   coeffsCyc L.Dec c' = Dec <$> R.coeffsDec (unCycGDec c')
@@ -691,7 +706,8 @@ instance (TensorPowDec t (RRq q r)) => ExtensionCyc (Cyc t) (RRq q r) where
   embed (DecRRq u) = PowRRq $ embedPow $ toPow u
   twace (PowRRq u) = PowRRq $ twacePow u
   twace (DecRRq u) = DecRRq $ twaceDec u
-  powBasis = (PowRRq <$>) <$> R.powBasis
+  powBasis :: forall m m' a . (m `Divides` m') => Tagged m [Cyc t m' (RRq q r)]
+  powBasis = tag $ PowRRq <$> R.powBasis @m
   coeffsCyc L.Pow (PowRRq c) = PowRRq <$> R.coeffsPow c
   coeffsCyc L.Dec (DecRRq c) = DecRRq <$> R.coeffsDec c
   coeffsCyc L.Pow (DecRRq c) = PowRRq <$> R.coeffsPow (toPow c)
@@ -705,14 +721,14 @@ embed' (Pow u) = Pow $ embedPow u
 embed' (Dec u) = Pow $ embedPow $ toPow u
 embed' (CRT u) = either (cycPE . embedCRTE) (cycPC . embedCRTC) u
 embed' (Scalar c) = Scalar c
-embed' (Sub (c :: CycG t k r)) = embed' c
-  \\ transDivides (Proxy::Proxy k) (Proxy::Proxy l) (Proxy::Proxy m)
+embed' (Sub (c :: CycG t k r)) = embed' c \\ transDivides @k @l @m
 
 -----
 
 instance (ZPP r, CRTElt t r, TensorCRTSet t (ZpOf r), ExtensionCyc (CycG t) r)
   => CRTSetCyc (CycG t) r where
-  crtSet = (Pow <$>) <$> R.crtSet
+  crtSet :: forall m m' . (m `Divides` m') => Tagged m [CycG t m' r]
+  crtSet = tag $ Pow <$> R.crtSet @m
   {-# INLINABLE crtSet #-}
 
 instance (CRTSetCyc (CycG t) (ZqBasic q z))
@@ -740,10 +756,10 @@ instance {-# INCOHERENT #-} (Fact m, Rescale a b, CRTElt t a, TensorPowDec t b)
   -- Analogs for decoding basis are not quite correct, because (* -1)
   -- doesn't commute with 'rescale' due to tiebreakers!
   rescaleCyc L.Pow (Scalar c) = Scalar $ rescale c
-  rescaleCyc L.Pow (Sub c) = Sub $ rescalePow c
+  rescaleCyc L.Pow (Sub c)    = Sub $ rescalePow c
 
-  rescaleCyc L.Pow c = Pow $ fmapI rescale $ unCycGPow c
-  rescaleCyc L.Dec c = Dec $ fmapI rescale $ unCycGDec c
+  rescaleCyc L.Pow c          = Pow $ fmapI rescale $ unCycGPow c
+  rescaleCyc L.Dec c          = Dec $ fmapI rescale $ unCycGDec c
   {-# INLINABLE rescaleCyc #-}
 
 -- | identity rescale
@@ -770,7 +786,7 @@ instance (Fact m, Reflects q z, Reduce z b, CRTElt t (ZqBasic q z), ZeroTestable
           Module.C b (Cyc t m b))
   => RescaleCyc (Cyc t m) b (ZqBasic q z, b) where
 
-  rescaleCyc = let q :: z = proxy value (Proxy::Proxy q)
+  rescaleCyc = let q :: z = value @q
                -- same method works for any basis
                in \_ b -> CycPair zero $ (reduce q :: b) *> b
 
@@ -782,7 +798,7 @@ instance (ToInteger z, Reflects q z, Reduce z b, Field b,
   => RescaleCyc (Cyc t m) (ZqBasic q z, b) b where
 
   rescaleCyc bas (CycPair a b) =
-    let q :: z = proxy value (Proxy::Proxy q)
+    let q :: z = value @q
         x      = liftCyc (Just bas) a
     in recip (reduce q :: b) *> (b - reduceCyc x)
 
@@ -820,17 +836,19 @@ instance (Gadget gad (ZqBasic q z),
           Fact m, CRTElt t (ZqBasic q z),
           ZeroTestable (ZqBasic q z), IntegralDomain (ZqBasic q z))
   => Gadget gad (CycG t m (ZqBasic q z)) where
-  gadget = (Scalar <$>) <$> gadget
+  gadget = Scalar <$> gadget @gad
   {-# INLINABLE gadget #-}
   -- CJP: default 'encode' works because mul-by-Scalar is fast
 
-deriving instance Gadget gad (CycG t m (ZqBasic q z))
-  => Gadget gad (Cyc t m (ZqBasic q z))
+-- can't auto-derive because of ambiguity of gadget
+instance Gadget gad (CycG t m (ZqBasic q z))
+  => Gadget gad (Cyc t m (ZqBasic q z)) where
+  gadget = coerce (gadget @gad :: [Cyc t m (ZqBasic q z)])
 
 instance (Gadget gad (Cyc t m a), Gadget gad (Cyc t m b))
   => Gadget gad (Cyc t m (a,b)) where
-  gadget = (++) <$> (map (flip CycPair zero) <$> gadget)
-                <*> (map (CycPair zero) <$> gadget)
+  gadget = (++) (flip CycPair zero <$> gadget @gad)
+                (     CycPair zero <$> gadget @gad)
 
 -- ForallFact2 in case they're useful
 
@@ -855,10 +873,10 @@ instance (ForallFact2 (Gadget gad) (Cyc t) a,
 instance (Fact m, Reduce a b, CRTElt t a, ZeroTestable a,
           CRTElt t b, ZeroTestable b) -- to satisfy Reduce superclasses
   => Reduce (CycG t m a) (CycG t m b) where
-  reduce (Pow u)    = Pow    $ reduce u
-  reduce (Dec u)    = Dec    $ reduce u
-  reduce (CRT u)    = Pow    $ reduce $ either toPow toPow u
-  reduce (Scalar c) = Scalar $ reduce c
+  reduce (Pow u)                 = Pow    $ reduce u
+  reduce (Dec u)                 = Dec    $ reduce u
+  reduce (CRT u)                 = Pow    $ reduce $ either toPow toPow u
+  reduce (Scalar c)              = Scalar $ reduce c
   reduce (Sub (c :: CycG t l a)) = Sub (reduce c :: CycG t l b)
 
 instance (Reduce (CycG t m Int64) (CycG t m (ZqBasic q Int64)))
@@ -871,15 +889,14 @@ instance (Fact m, Reflects q Int64, CRTElt t (ZqBasic q Int64), -- superclass
   reduce (PowIgr u) = CycZqB $ Pow $ fmap reduce u
   reduce (DecIgr u) = CycZqB $ Dec $ fmap reduce u
 
+instance (Fact m, Reflects q Double, CRTElt t Double, TensorPowDec t (RRq q Double),
+          FunctorCyc (Cyc t m) Double (RRq q Double))
+  => Reduce (Cyc t m Double) (Cyc t m (RRq q Double)) where
+  reduce = fmapCyc Nothing reduce
+
 instance (Reduce (Cyc t m z) (Cyc t m a), Reduce (Cyc t m z) (Cyc t m b))
   => Reduce (Cyc t m z) (Cyc t m (a,b)) where
   reduce z = CycPair (reduce z) (reduce z)
-
-toZL :: Tagged s [a] -> TaggedT s ZipList a
-toZL = coerce
-
-fromZL :: TaggedT s ZipList a -> Tagged s [a]
-fromZL = coerce
 
 -- | promoted from base ring, using the powerful basis for best geometry
 instance (Decompose gad (ZqBasic q z), CRTElt t (ZqBasic q z), Fact m,
@@ -893,12 +910,12 @@ instance (Decompose gad (ZqBasic q z), CRTElt t (ZqBasic q z), Fact m,
 
   -- faster implementations: decompose directly in subring, which is
   -- correct because we decompose in powerful basis
-  decompose (Scalar c) = (Scalar <$>) <$> decompose c
-  decompose (Sub c) = (Sub <$>) <$> decompose c
+  decompose (Scalar c) = Scalar <$> decompose @gad c
+  decompose (Sub c) = Sub <$> decompose @gad c
 
-  -- traverse: Traversable (CycRep t P m) and Applicative (Tagged gad ZL)
-  decompose (Pow u) = fromZL $ Pow <$> traverse (toZL . decompose) u
-  decompose c = decompose $ toPow' c
+  -- traverse: Traversable (CycRep t P m) and Applicative ZipList
+  decompose (Pow u) = getZipList $ Pow <$> traverse (ZipList . decompose @gad) u
+  decompose c = decompose @gad $ toPow' c
 
   {-# INLINABLE decompose #-}
 
@@ -909,7 +926,7 @@ instance (Decompose gad (CycG t m (ZqBasic q Int64)),
   => Decompose gad (Cyc t m (ZqBasic q Int64)) where
 
   type DecompOf (Cyc t m (ZqBasic q Int64)) = Cyc t m Int64
-  decompose (CycZqB c) = (CycI64 <$>) <$> decompose c
+  decompose (CycZqB c) = CycI64 <$> decompose @gad c
 
 instance (Decompose gad (Cyc t m a), Decompose gad (Cyc t m b),
          DecompOf (Cyc t m a) ~ DecompOf (Cyc t m b),
@@ -917,7 +934,7 @@ instance (Decompose gad (Cyc t m a), Decompose gad (Cyc t m b),
          Reduce (DecompOf (Cyc t m a)) (Cyc t m (a, b)))
   => Decompose gad (Cyc t m (a,b)) where
   type DecompOf (Cyc t m (a,b)) = DecompOf (Cyc t m a)
-  decompose (CycPair a b) = (++) <$> decompose a <*> decompose b
+  decompose (CycPair a b) = (++) (decompose @gad a) (decompose @gad b)
 
 -----
 
@@ -930,13 +947,19 @@ instance (Correct gad (ZqBasic q z), CRTElt t (ZqBasic q z), Fact m,
   -- sequence: Monad [] and Traversable (CycRep t D m)
   -- sequenceA: Applicative (CycRep t D m) and Traversable (TaggedT gad [])
   correct bs = Dec *** (Dec <$>) $
-               second sequence $ fmap fst &&& fmap snd $ (correct . pasteT) <$>
-               sequenceA (unCycGDec <$> peelT bs)
+               second sequence $ fmap fst &&& fmap snd $ correct @gad <$>
+               sequenceA (unCycGDec <$> bs)
   {-# INLINABLE correct #-}
 
--- specific to Int64 due to LiftOf
-deriving instance Correct gad (CycG t m (ZqBasic q Int64))
-  => Correct gad (Cyc t m (ZqBasic q Int64))
+-- specific to Int64 due to LiftOf. Can't auto-derive because of
+-- ambiguity of 'correct'
+instance Correct gad (CycG t m (ZqBasic q Int64))
+  => Correct gad (Cyc t m (ZqBasic q Int64)) where
+
+  -- correct = (CycZqB *** fmap CycI64) . correct @gad . fmap unCycZqB
+  correct = coerce $
+    (correct @gad :: [Cyc t m (ZqBasic q Int64)]
+                  -> (Cyc t m (ZqBasic q Int64), [Cyc t m Int64]))
 
 -- TODO: instance Correct gad (Cyc t m (a,b)) where
 -- seems hard; see Correct instance for pairs in Gadget.hs
@@ -953,23 +976,23 @@ toPow', toDec', toCRT' :: (Fact m, CRTElt t r) => CycG t m r -> CycG t m r
 {-# INLINABLE toCRT' #-}
 
 -- | Force to powerful-basis representation (for internal use only).
-toPow' c@(Pow _) = c
-toPow' (Dec u) = Pow $ toPow u
-toPow' (CRT u) = Pow $ either toPow toPow u
+toPow' c@(Pow _)  = c
+toPow' (Dec u)    = Pow $ toPow u
+toPow' (CRT u)    = Pow $ either toPow toPow u
 toPow' (Scalar c) = Pow $ scalarPow c
-toPow' (Sub c) = toPow' $ embed' c
+toPow' (Sub c)    = toPow' $ embed' c
 
 -- | Force to decoding-basis representation (for internal use only).
-toDec' (Pow u) = Dec $ toDec u
-toDec' c@(Dec _) = c
-toDec' (CRT u) = Dec $ either toDec toDec u
+toDec' (Pow u)    = Dec $ toDec u
+toDec' c@(Dec _)  = c
+toDec' (CRT u)    = Dec $ either toDec toDec u
 toDec' (Scalar c) = Dec $ toDec $ scalarPow c
-toDec' (Sub c) = toDec' $ embed' c
+toDec' (Sub c)    = toDec' $ embed' c
 
 -- | Force to a CRT representation (for internal use only).
-toCRT' (Pow u) = CRT $ toCRT u
-toCRT' (Dec u) = CRT $ toCRT u
-toCRT' c@(CRT _) = c
+toCRT' (Pow u)    = CRT $ toCRT u
+toCRT' (Dec u)    = CRT $ toCRT u
+toCRT' c@(CRT _)  = c
 toCRT' (Scalar c) = CRT $ scalarCRT c
 -- CJP: the following is the fastest algorithm for when both source
 -- and target have the same CRTr/CRTe choice.  It is not the fastest
@@ -977,7 +1000,7 @@ toCRT' (Scalar c) = CRT $ scalarCRT c
 -- input is non-CRT), but this is an unusual case.  Note: both calls
 -- to toCRT' are necessary in general, because embed' may not preserve
 -- CRT representation!
-toCRT' (Sub c) = toCRT' $ embed' $ toCRT' c
+toCRT' (Sub c)    = toCRT' $ embed' $ toCRT' c
 
 ---------- Utility instances ----------
 
@@ -1011,12 +1034,12 @@ instance (Fact m, ForallFact2 Random t (RRq q r))
 
 instance (Fact m, ForallFact2 Show t r, ForallFact2 Show t (CRTExt r), Show r)
   => Show (CycG t m r) where
-  show (Pow x) = "Cyc.Pow " ++ show x
-  show (Dec x) = "Cyc.Dec " ++ show x
-  show (CRT (Left x)) = "Cyc.CRT " ++ show x
+  show (Pow x)         = "Cyc.Pow " ++ show x
+  show (Dec x)         = "Cyc.Dec " ++ show x
+  show (CRT (Left x))  = "Cyc.CRT " ++ show x
   show (CRT (Right x)) = "Cyc.CRT " ++ show x
-  show (Scalar x) = "Cyc.Scalar " ++ show x
-  show (Sub x) = "Cyc.Sub " ++ show x
+  show (Scalar x)      = "Cyc.Scalar " ++ show x
+  show (Sub x)         = "Cyc.Sub " ++ show x
 
 deriving instance Show (CycG t m Double)        => Show (Cyc t m Double)
 deriving instance Show (CycG t m Int64)         => Show (Cyc t m Int64)
@@ -1032,11 +1055,11 @@ deriving instance (Fact m, ForallFact2 Show t (RRq q r)) => Show (Cyc t m (RRq q
 instance (Fact m, NFData r,
           ForallFact2 NFData t r, ForallFact2 NFData t (CRTExt r))
          => NFData (CycG t m r) where
-  rnf (Pow u) = rnf u
-  rnf (Dec u) = rnf u
-  rnf (CRT u) = rnf u
+  rnf (Pow u)    = rnf u
+  rnf (Dec u)    = rnf u
+  rnf (CRT u)    = rnf u
   rnf (Scalar u) = rnf u
-  rnf (Sub c) = rnf c
+  rnf (Sub c)    = rnf c
 
 deriving instance NFData (CycG t m Double)        => NFData (Cyc t m Double)
 deriving instance NFData (CycG t m Int64)         => NFData (Cyc t m Int64)
@@ -1060,7 +1083,7 @@ instance (Fact m, CRTElt t r, Protoable (CycRep t D m r))
     => Protoable (CycG t m r) where
   type ProtoType (CycG t m r) = ProtoType (CycRep t D m r)
   toProto (Dec uc) = toProto uc
-  toProto x = toProto $ toDec' x
+  toProto x        = toProto $ toDec' x
   fromProto x = Dec <$> fromProto x
 
 instance (Fact m, CRTElt t Double, Protoable (CycG t m Double))
@@ -1088,6 +1111,28 @@ instance (Fact m, CRTElt t Double, TensorPowDec t (RRq q Double),
   toProto (PowRRq x) = toProto $ toDec x
   toProto (DecRRq x) = toProto x
   fromProto x = DecRRq <$> fromProto x
+
+---------- Instances of FoldableCyc ----------
+
+instance (Fact m, FoldableCyc (CycG t m) Double) => FoldableCyc (Cyc t m) Double where
+  foldrCyc bas f acc (CycDbl u) = foldrCyc bas f acc u
+
+instance (Fact m, FoldableCyc (CycG t m) Int64) => FoldableCyc (Cyc t m) Int64 where
+  foldrCyc bas f acc (CycI64 u) = foldrCyc bas f acc u
+
+instance (Fact m, FoldableCyc (CycG t m) (ZqBasic q z)) => FoldableCyc (Cyc t m) (ZqBasic q z) where
+  foldrCyc bas f acc (CycZqB u) = foldrCyc bas f acc u
+
+-- No instance for CycPair is possible.
+
+-- No instance for Cyc over Integer without TensorPowDec CT Integer, since we need to use toDec and
+-- toPow as defined in CycRep.
+
+instance (Fact m, TensorPowDec t (RRq q r), Foldable (CycRep t P m), Foldable (CycRep t D m))
+    => FoldableCyc (Cyc t m) (RRq q r) where
+  foldrCyc (Just L.Pow) f acc c = foldr f acc (unCycPow c)
+  foldrCyc (Just L.Dec) f acc c = foldr f acc (unCycDec c)
+  foldrCyc Nothing f acc c      = foldrCyc (Just L.Pow) f acc c
 
 ---------- TH instances of FunctorCyc ----------
 

@@ -19,6 +19,7 @@ Interface for cyclotomic tensors, and helper functions for tensor
 indexing.
 -}
 
+{-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE FlexibleContexts        #-}
@@ -28,6 +29,7 @@ indexing.
 {-# LANGUAGE RankNTypes              #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TupleSections           #-}
+{-# LANGUAGE TypeApplications        #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
@@ -101,20 +103,26 @@ class (ForallFact1 Functor  t, ForallFact1 Applicative t,
 
   -- | The @twace@ linear transformation, which is the same in both the
   -- powerful and decoding bases.
-  twacePowDec :: m `Divides` m' => t m' r -> t m r
+  twacePowDec :: (m `Divides` m') => t m' r -> t m r
 
   -- | The @embed@ linear transformations, for the powerful and
   -- decoding bases.
-  embedPow, embedDec :: m `Divides` m' => t m r -> t m' r
+  embedPow, embedDec :: (m `Divides` m') => t m r -> t m' r
 
   -- | Map a tensor in the powerful/decoding/CRT basis, representing
   -- an \(\O_{m'}\) element, to a vector of tensors representing
   -- \(\O_m\) elements in the same kind of basis.
-  coeffs :: m `Divides` m' => t m' r -> [t m r]
+  coeffs :: (m `Divides` m') => t m' r -> [t m r]
+
+  -- CJP: we have to use tags due to this bug:
+  -- https://ghc.haskell.org/trac/ghc/ticket/14266 "It was a surprise
+  -- to me that I can see no way to allow to write an instance when
+  -- the method has a a locally-polymorphic but ambiguous method
+  -- types."
 
   -- | The relative powerful basis of \( \O_{m'}/\O_{m} \),
   -- w.r.t. the powerful basis of \( \O_{m'} \).
-  powBasisPow :: m `Divides` m' => Tagged m [t m' r]
+  powBasisPow :: (m `Divides` m') => Tagged m [t m' r]
 
 -- | Encapsulates multiplication and division by \(g_m\)
 class TensorPowDec t r => TensorG t r where
@@ -147,7 +155,7 @@ class (TensorPowDec t r, CRTrans mon r, ForallFact2 (Module.C r) t r)
   -- method directly, but instead call the corresponding top-level
   -- functions: the elements of the tuple correpond to the functions
   -- 'twaceCRT', 'embedCRT'.
-  crtExtFuncs :: m `Divides` m' =>
+  crtExtFuncs :: (m `Divides` m') =>
                  mon (t m' r -> t m  r, -- twaceCRT
                       t m  r -> t m' r) -- embedCRT
 
@@ -170,17 +178,18 @@ class TensorGSqNorm t r where
 -- | A 'TensorPowDec' that supports relative CRT sets for the element type
 -- 'fp' representing a prime-order finite field.
 class (TensorPowDec t fp) => TensorCRTSet t fp where
+  -- CJP: see above for why we use a Tagged type here
+
   -- | Relative mod-@p@ CRT set of \( \O_{m'}/\O_{m} \) in the
   -- decoding basis.
   crtSetDec :: (m `Divides` m', Coprime (PToF (CharOf fp)) m')
     => Tagged m [t m' fp]
 
 -- | Convenience value indicating whether 'crtFuncs' exists.
-hasCRTFuncs :: forall t m mon r . (TensorCRT t mon r, Fact m)
-               => TaggedT (t m r) mon ()
+hasCRTFuncs :: forall t m r mon . (TensorCRT t mon r, Fact m) => mon ()
 {-# INLINABLE hasCRTFuncs #-}
-hasCRTFuncs = tagT $ do
-  (_ :: r -> t m r,_,_,_,_) <- crtFuncs
+hasCRTFuncs = do
+  (_,_,_,_,_) <- crtFuncs @t @mon @r @m
   return ()
 
 -- | Yield a tensor for a scalar in the CRT basis.  (This function is
@@ -216,8 +225,8 @@ crtInv = (\(_,_,_,_,f) -> f) <$> crtFuncs
 twaceCRT :: forall t m m' mon r . (TensorCRT t mon r, m `Divides` m')
             => mon (t m' r -> t m r)
 {-# INLINABLE twaceCRT #-}
-twaceCRT = proxyT hasCRTFuncs (Proxy::Proxy (t m' r)) *>
-           proxyT hasCRTFuncs (Proxy::Proxy (t m  r)) *>
+twaceCRT = hasCRTFuncs @t @m' @r *>
+           hasCRTFuncs @t @m  @r *>
            (fst <$> crtExtFuncs)
 
 -- | Embed a tensor with index \(m\) in the CRT basis to a tensor with
@@ -225,14 +234,14 @@ twaceCRT = proxyT hasCRTFuncs (Proxy::Proxy (t m' r)) *>
 -- (This function is simply an appropriate entry from 'crtExtFuncs'.)
 embedCRT :: forall t m m' mon r . (TensorCRT t mon r, m `Divides` m')
             => mon (t m r -> t m' r)
-embedCRT = proxyT hasCRTFuncs (Proxy::Proxy (t m' r)) *>
-           proxyT hasCRTFuncs (Proxy::Proxy (t m  r)) *>
+embedCRT = hasCRTFuncs @t @m' @r *>
+           hasCRTFuncs @t @m  @r *>
            (snd <$> crtExtFuncs)
 
 fKron :: forall m r mon . (Fact m, Monad mon)
          => (forall pp . (PPow pp) => TaggedT pp mon (KronC r))
-         -> TaggedT m mon (Kron r)
-fKron mat = tagT $ go $ sUnF (sing :: SFactored m)
+         -> mon (Kron r)
+fKron mat = go $ sUnF (sing :: SFactored m)
   where go :: Sing (pplist :: [PrimePower]) -> mon (Kron r)
         go spps = case spps of
           SNil -> return MNil
@@ -248,9 +257,9 @@ ppKron :: forall pp r mon . (PPow pp, Monad mon)
           => (forall p . (Prime p) => TaggedT p mon (KronC r))
           -> TaggedT pp mon (KronC r)
 ppKron mat = tagT $ case (sing :: SPrimePower pp) of
-  pp@(SPP (STuple2 sp _)) -> do
+  pp@(SPP (STuple2 (sp :: Sing p) _)) -> do
     (MC h w f) <- withWitnessT mat sp
-    let d = withWitness valuePPow pp `div` withWitness valuePrime sp
+    let d = withSingI pp (valuePPow @pp) `div` withSingI sp (valuePrime @p)
     return $ MC (h*d) w (f . (`mod` h))
 
 -- deeply embedded DSL for Kronecker products of matrices
@@ -270,26 +279,27 @@ indexK (MKron m (MC r c mc)) i j =
       (jq,jr) = j `divMod` c
       in indexK m iq jq * mc ir jr
 
-gCRTK, gInvCRTK :: (Fact m, CRTrans mon r) => TaggedT m mon (Kron r)
+gCRTK, gInvCRTK :: forall m mon r . (Fact m, CRTrans mon r) => mon (Kron r)
 -- | A \(\varphi(m)\)-by-1 matrix of the CRT coefficients of \(g_m\), for
 -- \(m\)th cyclotomic.
-gCRTK = fKron gCRTPPow
+gCRTK = fKron @m gCRTPPow
 -- | A \(\varphi(m)\)-by-1 matrix of the inverse CRT coefficients of \(g_m\),
 -- for \(m\)th cyclotomic.
-gInvCRTK = fKron gInvCRTPPow
+gInvCRTK = fKron @m gInvCRTPPow
 
 -- | The "tweaked" \(\CRT^*\) matrix:
 -- \(\CRT^* \cdot \text{diag}(\sigma(g_m))\).
-twCRTs :: (Fact m, CRTrans mon r) => TaggedT m mon (Kron r)
-twCRTs = fKron twCRTsPPow
+twCRTs :: forall m mon r . (Fact m, CRTrans mon r) => mon (Kron r)
+twCRTs = fKron @m twCRTsPPow
 
 -- | The "tweaked" \(\CRT^*\) matrix (for prime powers):
 -- \(\CRT^* \cdot \text{diag}(\sigma(g_p))\).
-twCRTsPPow :: (PPow pp, CRTrans mon r) => TaggedT pp mon (KronC r)
+twCRTsPPow :: forall pp mon r .
+  (PPow pp, CRTrans mon r) => TaggedT pp mon (KronC r)
 twCRTsPPow = do
-  phi    <- pureT totientPPow
-  iToZms <- pureT indexToZmsPPow
-  jToPow <- pureT indexToPowPPow
+  let phi    = totientPPow @pp
+      iToZms = indexToZmsPPow @pp
+      jToPow = indexToPowPPow @pp
   (wPow, _) <- crtInfo
   (MC _ _ gCRT) <- gCRTPPow
   return $ MC phi phi (\j i -> wPow (jToPow j * negate (iToZms i)) * gCRT i 0)
@@ -298,12 +308,13 @@ gCRTPPow, gInvCRTPPow :: (PPow pp, CRTrans mon r) => TaggedT pp mon (KronC r)
 gCRTPPow = ppKron gCRTPrime
 gInvCRTPPow = ppKron gInvCRTPrime
 
-gCRTPrime, gInvCRTPrime :: (Prime p, CRTrans mon r) => TaggedT p mon (KronC r)
+gCRTPrime, gInvCRTPrime :: forall p mon r .
+  (Prime p, CRTrans mon r) => TaggedT p mon (KronC r)
 
 -- | A \((p-1)\)-by-1 matrix of the CRT coefficients of \(g_p\), for
 -- \(p\)th cyclotomic.
 gCRTPrime = do
-  p <- pureT valuePrime
+  let p = valuePrime @p
   (wPow, _) <- crtInfo
   return $ MC (p-1) 1 $ if p == 2 then const $ const one
                         else (\i _ -> one - wPow (i+1))
@@ -311,7 +322,7 @@ gCRTPrime = do
 -- | A \((p-1)\)-by-1 matrix of the inverse CRT coefficients of \(g_p\),
 -- for the \(p\)th cyclotomic.
 gInvCRTPrime = do
-  p <- pureT valuePrime
+  let p = valuePrime @p
   (wPow, phatinv) <- crtInfo
   return $ MC (p-1) 1 $
     if p == 2 then const $ const one
@@ -328,13 +339,13 @@ digitRev (p,e) j
   | e >= 1 = let (q,r) = j `divMod` p
              in r * (p^(e-1)) + digitRev (p,e-1) q
 
-indexToPowPPow, indexToZmsPPow :: PPow pp => Tagged pp (Int -> Int)
-indexToPowPPow = indexToPow <$> ppPPow
-indexToZmsPPow = indexToZms <$> ppPPow
+indexToPowPPow, indexToZmsPPow :: forall pp . PPow pp => Int -> Int
+indexToPowPPow = indexToPow (ppPPow @pp)
+indexToZmsPPow = indexToZms (ppPPow @pp)
 
 -- | Convert a \(\Z_m^*\) index to a linear tensor index in \([m]\).
-zmsToIndexFact :: Fact m => Tagged m (Int -> Int)
-zmsToIndexFact = zmsToIndex <$> ppsFact
+zmsToIndexFact :: forall m . Fact m => (Int -> Int)
+zmsToIndexFact = zmsToIndex (ppsFact @m)
 
 -- | For a prime power \(p^e\), map a tensor index to the corresponding
 -- power \(j \in [\varphi(p^e)]\), as in the powerful basis.
@@ -393,70 +404,66 @@ fromIndexPair ((phi,phi'):rest) (i1,i0) =
 -- final component is a pair \( ( \varphi(p^e), \varphi(p^{e'}))\) for each
 -- triple in the first component.
 indexInfo :: forall m m' . (m `Divides` m')
-             => Tagged '(m, m') ([(Int,Int,Int)], Int, Int, [(Int,Int)])
-indexInfo = let pps = proxy ppsFact (Proxy::Proxy m)
-                pps' = proxy ppsFact (Proxy::Proxy m')
+             => ([(Int,Int,Int)], Int, Int, [(Int,Int)])
+indexInfo = let pps  = ppsFact @m
+                pps' = ppsFact @m'
                 mpps = mergePPs pps pps'
-                phi = proxy totientFact (Proxy::Proxy m)
-                phi' = proxy totientFact (Proxy::Proxy m')
+                phi  = totientFact @m
+                phi' = totientFact @m'
                 tots = totients mpps
-            in tag (mpps, phi, phi', tots)
+            in (mpps, phi, phi', tots)
 
 -- | A vector of \(\varphi(m)\) entries, where the \(i\)th entry is
 -- the index into the powerful/decoding basis of \(\O_{m'}\) of the
 -- \(i\)th entry of the powerful/decoding basis of \(\O_m\).
-extIndicesPowDec :: (m `Divides` m') => Tagged '(m, m') (U.Vector Int)
+extIndicesPowDec :: forall m m' . (m `Divides` m') => U.Vector Int
 {-# INLINABLE extIndicesPowDec #-}
-extIndicesPowDec = do
-  (_, phi, _, tots) <- indexInfo
-  return $ U.generate phi (fromIndexPair tots . (0,))
+extIndicesPowDec =
+  let (_, phi, _, tots) = indexInfo @m @m'
+  in U.generate phi (fromIndexPair tots . (0,))
 
 -- | A vector of \(\varphi(m)\) blocks of \(\varphi(m')/\varphi(m)\) consecutive
 -- entries. Each block contains all those indices into the CRT basis
 -- of \(\O_{m'}\) that "lie above" the corresponding index into the CRT
 -- basis of \(\O_m\).
-extIndicesCRT :: forall m m' . (m `Divides` m')
-                 => Tagged '(m, m') (U.Vector Int)
-extIndicesCRT = do
-  (_, phi, phi', tots) <- indexInfo
-  return $ U.generate phi'
-           (fromIndexPair tots . swap . (`divMod` (phi' `div` phi)))
+extIndicesCRT :: forall m m' . (m `Divides` m') => U.Vector Int
+extIndicesCRT =
+  let (_, phi, phi', tots) = indexInfo @m @m'
+  in U.generate phi'
+     (fromIndexPair tots . swap . (`divMod` (phi' `div` phi)))
 
 baseWrapper :: forall m m' a . (m `Divides` m', U.Unbox a)
                => ([(Int,Int,Int)] -> Int -> a)
-               -> Tagged '(m, m') (U.Vector a)
-baseWrapper f = do
-  (mpps, _, phi', _) <- indexInfo
-  return $ U.generate phi' (f mpps)
+               -> U.Vector a
+baseWrapper f =
+  let (mpps, _, phi', _) = indexInfo @m @m'
+  in U.generate phi' (f mpps)
 
 -- | A lookup table for 'toIndexPair' applied to indices \([\varphi(m')]\).
-baseIndicesPow :: forall m m' . (m `Divides` m')
-                  => Tagged '(m, m') (U.Vector (Int,Int))
-baseIndicesPow = baseWrapper (toIndexPair . totients)
+baseIndicesPow :: forall m m' . (m `Divides` m') => U.Vector (Int,Int)
+baseIndicesPow = baseWrapper @m @m' (toIndexPair . totients)
 {-# INLINABLE baseIndicesPow #-}
 
 -- | A lookup table for 'baseIndexDec' applied to indices \([\varphi(m')]\).
-baseIndicesDec :: forall m m' . (m `Divides` m')
-                  => Tagged '(m, m') (U.Vector (Maybe (Int,Bool)))
+baseIndicesDec :: forall m m' . (m `Divides` m') => U.Vector (Maybe (Int,Bool))
 -- this one is more complicated; requires the prime powers
-baseIndicesDec = baseWrapper baseIndexDec
+baseIndicesDec = baseWrapper @m @m' baseIndexDec
 {-# INLINABLE baseIndicesDec #-}
 
 -- | Same as 'baseIndicesPow', but only includes the second component
 -- of each pair.
-baseIndicesCRT :: forall m m' . (m `Divides` m')
-                  => Tagged '(m, m') (U.Vector Int)
+baseIndicesCRT :: forall m m' . (m `Divides` m') => U.Vector Int
 baseIndicesCRT =
-  baseWrapper (\pps -> snd . toIndexPair (totients pps))
+  baseWrapper @m @m' (\pps -> snd . toIndexPair (totients pps))
 
 -- | The \(i_0\)th entry of the \(i_1\)th vector is
 -- 'fromIndexPair' \((i_1,i_0)\).
 extIndicesCoeffs :: forall m m' . (m `Divides` m')
-                    => Tagged '(m, m') (V.Vector (U.Vector Int))
-extIndicesCoeffs = do
-  (_, phi, phi', tots) <- indexInfo
-  return $ V.generate (phi' `div` phi)
-           (\i1 -> U.generate phi (\i0 -> fromIndexPair tots (i1,i0)))
+                    => V.Vector (U.Vector Int)
+extIndicesCoeffs =
+  let (_, phi, phi', tots) = indexInfo @m @m'
+  in V.generate (phi' `div` phi)
+     (\i1 -> U.generate phi (\i0 -> fromIndexPair tots (i1,i0)))
 
 -- | Convenient reindexing functions
 

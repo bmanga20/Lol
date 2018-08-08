@@ -14,23 +14,28 @@ Tests for the 'Tensor' interface.
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RebindableSyntax      #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
-module Crypto.Lol.Tests.TensorTests (tensorCrtTests1, tensorCrtTests2, tensorTests1, tensorTests2) where
+module Crypto.Lol.Tests.TensorTests
+( tensorCrtTests1, tensorCrtTests2, tensorTests1, tensorTests2
+) where
 
 import Crypto.Lol
 import Crypto.Lol.Cyclotomic.Tensor
 import Crypto.Lol.Utils.ShowType
-import Crypto.Lol.Utils.Tests (nestGroup, testGroup, testWithGen, testWithoutGen,
-                               (=~=), ApproxEqual, Gen, Test)
+import Crypto.Lol.Utils.Tests
+    (ApproxEqual, Gen, Test, nestGroup, testGroup, testWithGen,
+    testWithoutGen, (=~=))
 
 import Control.Applicative
 import Data.Maybe
@@ -196,10 +201,10 @@ prop_twEmID x = ((twacePowDec x) =~= x) &&
 -- twace mhat'/g' = mhat*totm'/totm/g (Pow basis)
 prop_twace_invar1_pow :: forall t m m' r . _ => Proxy '(t,m,m',r) -> Bool
 prop_twace_invar1_pow _ = fromMaybe (error "could not divide by G in prop_twace_invar1_pow") $ do
-  let mhat = proxy valueHatFact (Proxy::Proxy m)
-      mhat' = proxy valueHatFact (Proxy::Proxy m')
-      totm = proxy totientFact (Proxy::Proxy m)
-      totm' = proxy totientFact (Proxy::Proxy m')
+  let mhat  = valueHatFact @m
+      mhat' = valueHatFact @m'
+      totm  = totientFact  @m
+      totm' = totientFact  @m'
   output :: t m r <- divGPow $ scalarPow $ fromIntegral $ mhat * totm' `div` totm
   input :: t m' r <- divGPow $ scalarPow $ fromIntegral mhat'
   return $ (twacePowDec input) =~= output
@@ -207,10 +212,10 @@ prop_twace_invar1_pow _ = fromMaybe (error "could not divide by G in prop_twace_
 -- twace mhat'/g' = mhat*totm'/totm/g (Dec basis)
 prop_twace_invar1_dec :: forall t m m' r . _ => Proxy '(t,m,m',r) -> Bool
 prop_twace_invar1_dec _ = fromMaybe (error "could not divide by G in prop_twace_invar1_dec") $ do
-  let mhat = proxy valueHatFact (Proxy::Proxy m)
-      mhat' = proxy valueHatFact (Proxy::Proxy m')
-      totm = proxy totientFact (Proxy::Proxy m)
-      totm' = proxy totientFact (Proxy::Proxy m')
+  let mhat  = valueHatFact @m
+      mhat' = valueHatFact @m'
+      totm  = totientFact  @m
+      totm' = totientFact  @m'
   output :: t m r <- divGDec $ powToDec $ scalarPow $ fromIntegral $ mhat * totm' `div` totm
   input :: t m' r <- divGDec $ powToDec $ scalarPow $ fromIntegral mhat'
   return $ (twacePowDec input) =~= output
@@ -218,10 +223,10 @@ prop_twace_invar1_dec _ = fromMaybe (error "could not divide by G in prop_twace_
 -- twace mhat'/g' = mhat*totm'/totm/g (CRT basis)
 prop_twace_invar1_crt :: forall t m m' r . _ => Proxy '(t,m,m',r) -> Bool
 prop_twace_invar1_crt _ = fromMaybe (error "no CRT in prop_twace_invar1_crt") $ do
-  let mhat = proxy valueHatFact (Proxy::Proxy m)
-      mhat' = proxy valueHatFact (Proxy::Proxy m')
-      totm = proxy totientFact (Proxy::Proxy m)
-      totm' = proxy totientFact (Proxy::Proxy m')
+  let mhat  = valueHatFact @m
+      mhat' = valueHatFact @m'
+      totm  = totientFact  @m
+      totm' = totientFact  @m'
   scalarCRT1 <- scalarCRT
   scalarCRT2 <- scalarCRT
   divGCRT1 <- divGCRT
