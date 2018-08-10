@@ -18,7 +18,7 @@ Etagicient lattice trapdoor operations from <http://web.eecs.umich.edu/~cpeikert
 {-# LANGUAGE TypeFamilies          #-}
 
 module Crypto.Lol.Applications.Trapdoor
-( PublicKey, PublicParam(..), Trapdoor, LWEOutput, LWESecret, LWEError
+( PublicKey, PublicParam(..), Trapdoor, LWEOutput, LWESecret(..), LWEError(..)
 , genTrap, rndTag, rndPublicParam
 , lweInv, lweRand, rndSecret
 ) where
