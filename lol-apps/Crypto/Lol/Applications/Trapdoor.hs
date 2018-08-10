@@ -42,9 +42,9 @@ data    LWEError rq          = Err   { eBar    :: Matrix rq
 -- METHODS --
 
 genTrap :: forall gad tag cm zq z rnd .
-  (Reduce (cm z) (cm zq),
+  (Reduce (cm (LiftOf zq)) (cm zq),
    Ring (cm zq), Module tag (cm zq), Gadget gad (cm zq),
-   RoundedGaussianCyc cm z, MonadRandom rnd)
+   RoundedGaussianCyc cm (LiftOf zq), MonadRandom rnd)
   => PublicParam (cm zq)
   -> tag
   -> rnd (Trapdoor gad (cm zq), PublicKey gad tag (cm zq))
@@ -52,7 +52,7 @@ genTrap pp@(Param aBar) t = do
   let mBar = numColumns aBar
       tGad = (t *>) <$> (gadget @gad)
       tGadMtx = M.fromList 1 (length tGad) tGad
-  r :: Matrix (cm z) <- gaussianMtx mBar $ length tGad
+  r :: Matrix (cm (LiftOf zq)) <- gaussianMtx mBar $ length tGad
   let r' = reduce <$> r
   return (Trap r', PK pp (tGadMtx - aBar * r') t)
 
