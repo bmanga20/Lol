@@ -75,8 +75,8 @@ import           Crypto.Lol.Cyclotomic.CycRep   hiding (coeffsDec,
 import qualified Crypto.Lol.Cyclotomic.CycRep   as R
 import           Crypto.Lol.Cyclotomic.Language hiding (Dec, Pow)
 import qualified Crypto.Lol.Cyclotomic.Language as L
-import           Crypto.Lol.Cyclotomic.Tensor   (TensorCRT, TensorCRTSet,
-                                                 TensorG, TensorGSqNorm,
+import           Crypto.Lol.Cyclotomic.Tensor   (TensorCRTSet,
+                                                 TensorGSqNorm,
                                                  TensorGaussian,
                                                  TensorPowDec)
 import           Crypto.Lol.Gadget
@@ -88,15 +88,13 @@ import           Crypto.Lol.Types.IFunctor
 import           Crypto.Lol.Types.Proto
 import           Crypto.Lol.Types.ZPP
 
-import           Control.Applicative    hiding ((*>))
+import           Control.Applicative  hiding ((*>))
 import           Control.Arrow
 import           Control.DeepSeq
-import           Control.Monad.Identity
-import           Control.Monad.Random   hiding (lift)
-import           Data.Coerce
-import           Data.Constraint        ((:-), Dict (..), (\\))
-import qualified Data.Constraint        as C
-import           Data.Foldable          (Foldable)
+import           Control.Monad.Random hiding (lift)
+import           Data.Constraint      ((:-), Dict (..), (\\))
+import qualified Data.Constraint      as C
+import           Data.Foldable        (Foldable)
 import           Data.Traversable
 import           Language.Haskell.TH
 
@@ -215,18 +213,42 @@ instance (UnCyc t a, UnCyc t b, IFunctor t, IFElt t a, IFElt t b, IFElt t (a,b))
   unCycPow (CycPair a b) = zipWithI (,) (unCycPow a) (unCycPow b)
   unCycDec (CycPair a b) = zipWithI (,) (unCycDec a) (unCycDec b)
 
----------- Category theoretic instances ----------
+---------- Category-theoretic instances ----------
 
-instance (Fact m, CRTElt t r,
-          Traversable (CycRep t P m), Traversable (CycRep t D m), ForallFact1 Foldable t)
+instance (Fact m, CRTElt t r, ForallFact1 Foldable t,
+          Traversable (CycRep t P m), Traversable (CycRep t D m))
     => FoldableCyc (CycG t m) r where
-  foldrCyc (Just L.Pow) f acc (Pow u) = foldr f acc u
-  foldrCyc (Just L.Dec) f acc (Dec u) = foldr f acc u
-  foldrCyc Nothing f acc c = foldrCyc (Just L.Pow) f acc c
-  foldrCyc powbas@(Just L.Pow) f acc c@(Dec u) = foldrCyc powbas f acc (toPow' c)
-  foldrCyc decbas@(Just L.Dec) f acc c@(Pow u) = foldrCyc decbas f acc (toDec' c)
-  foldrCyc bas f acc c@(CRT u) = foldrCyc bas f acc (toPow' c)
-  foldrCyc bas f acc (Sub u) = foldrCyc bas f acc u
+  foldrCyc (Just L.Pow)   f acc (Pow u) = foldr f acc u
+  foldrCyc (Just L.Dec)   f acc (Dec u) = foldr f acc u
+  foldrCyc Nothing        f acc (Pow u) = foldr f acc u
+  foldrCyc Nothing        f acc (Dec u) = foldr f acc u
+
+  foldrCyc b@(Just L.Pow) f acc c       = foldrCyc b f acc $ toPow' c
+  foldrCyc b@(Just L.Dec) f acc c       = foldrCyc b f acc $ toDec' c
+  foldrCyc Nothing        f acc c       = foldrCyc Nothing f acc $ toPow' c
+
+instance (FoldableCyc (CycG t m) Double) => FoldableCyc (Cyc t m) Double where
+  foldrCyc bas f acc = foldrCyc bas f acc . unCycDbl
+
+instance (FoldableCyc (CycG t m) Int64) => FoldableCyc (Cyc t m) Int64 where
+  foldrCyc bas f acc = foldrCyc bas f acc . unCycI64
+
+instance (FoldableCyc (CycG t m) (ZqBasic q z)) => FoldableCyc (Cyc t m) (ZqBasic q z) where
+  foldrCyc bas f acc = foldrCyc bas f acc . unCycZqB
+
+-- No instance for CycPair -- is one possible?
+
+-- No instance for Cyc over Integer without TensorPowDec CT Integer,
+-- because we need toDec and toPow.
+
+instance (Fact m, TensorPowDec t (RRq q r),
+          ForallFact1 Traversable t, ForallFact1 Applicative t)
+    => FoldableCyc (Cyc t m) (RRq q r) where
+  foldrCyc (Just L.Pow) f acc = foldr f acc . unCycPow
+  foldrCyc (Just L.Dec) f acc = foldr f acc . unCycDec
+  foldrCyc Nothing      f acc = foldrCyc (Just L.Pow) f acc
+
+--- FunctorCyc
 
 instance (Fact m, CRTElt t a, IFunctor t, IFElt t a, IFElt t b)
   => FunctorCyc (CycG t m) a b where
@@ -376,12 +398,6 @@ instance (Fact m, CRTElt t r, ZeroTestable r) => Additive.C (CycG t m r) where
 deriving instance Additive (CycG t m Double) => Additive.C (Cyc t m Double)
 deriving instance Additive (CycG t m Int64) => Additive.C (Cyc t m Int64)
 deriving instance Additive (CycG t m (ZqBasic q z)) => Additive.C (Cyc t m (ZqBasic q z))
-
--- CJP: need at least a basic TensorPowDec t Integer implementation to do this
-instance Additive.C (Cyc t m Integer) where
-  (+) = error "TODO: implement Additive for Cyc t m Integer"
-  zero = error "TODO: implement Additive for Cyc t m Integer"
-  negate = error "TODO: implement Additive for Cyc t m Integer"
 
 instance (Additive (Cyc t m a), Additive (Cyc t m b))
   => Additive.C (Cyc t m (a,b)) where
@@ -669,7 +685,7 @@ instance (CRTElt t r, ZeroTestable r, IntegralDomain r) -- ZT, ID for superclass
   twace (Sub (c :: CycG t l r)) = Sub (twace c :: CycG t (FGCD l m) r)
                                   \\ gcdDivides @l @m
 
-  powBasis :: forall m m' a . (m `Divides` m') => Tagged m [CycG t m' r]
+  powBasis :: forall m m' . (m `Divides` m') => Tagged m [CycG t m' r]
   powBasis = tag $ Pow <$> R.powBasis @m
 
   coeffsCyc L.Pow c' = Pow <$> R.coeffsPow (unCycGPow c')
@@ -706,7 +722,7 @@ instance (TensorPowDec t (RRq q r)) => ExtensionCyc (Cyc t) (RRq q r) where
   embed (DecRRq u) = PowRRq $ embedPow $ toPow u
   twace (PowRRq u) = PowRRq $ twacePow u
   twace (DecRRq u) = DecRRq $ twaceDec u
-  powBasis :: forall m m' a . (m `Divides` m') => Tagged m [Cyc t m' (RRq q r)]
+  powBasis :: forall m m' . (m `Divides` m') => Tagged m [Cyc t m' (RRq q r)]
   powBasis = tag $ PowRRq <$> R.powBasis @m
   coeffsCyc L.Pow (PowRRq c) = PowRRq <$> R.coeffsPow c
   coeffsCyc L.Dec (DecRRq c) = DecRRq <$> R.coeffsDec c
@@ -843,7 +859,7 @@ instance (Gadget gad (ZqBasic q z),
 -- can't auto-derive because of ambiguity of gadget
 instance Gadget gad (CycG t m (ZqBasic q z))
   => Gadget gad (Cyc t m (ZqBasic q z)) where
-  gadget = coerce (gadget @gad :: [Cyc t m (ZqBasic q z)])
+  gadget = CycZqB <$> gadget @gad
 
 instance (Gadget gad (Cyc t m a), Gadget gad (Cyc t m b))
   => Gadget gad (Cyc t m (a,b)) where
@@ -870,8 +886,7 @@ instance (ForallFact2 (Gadget gad) (Cyc t) a,
 
 -----
 
-instance (Fact m, Reduce a b, CRTElt t a, ZeroTestable a,
-          CRTElt t b, ZeroTestable b) -- to satisfy Reduce superclasses
+instance (Fact m, Reduce a b, CRTElt t a, TensorPowDec t b)
   => Reduce (CycG t m a) (CycG t m b) where
   reduce (Pow u)                 = Pow    $ reduce u
   reduce (Dec u)                 = Dec    $ reduce u
@@ -883,14 +898,12 @@ instance (Reduce (CycG t m Int64) (CycG t m (ZqBasic q Int64)))
   => Reduce (Cyc t m Int64) (Cyc t m (ZqBasic q Int64)) where
   reduce = CycZqB . reduce . unCycI64
 
-instance (Fact m, Reflects q Int64, CRTElt t (ZqBasic q Int64), -- superclass
-          Additive (Cyc t m Integer)) -- superclass
+instance (Fact m, Reflects q Int64, ForallFact1 Applicative t)
   => Reduce (Cyc t m Integer) (Cyc t m (ZqBasic q Int64)) where
   reduce (PowIgr u) = CycZqB $ Pow $ fmap reduce u
   reduce (DecIgr u) = CycZqB $ Dec $ fmap reduce u
 
-instance (Fact m, Reflects q Double, CRTElt t Double, TensorPowDec t (RRq q Double),
-          FunctorCyc (Cyc t m) Double (RRq q Double))
+instance (Reflects q Double, FunctorCyc (Cyc t m) Double (RRq q Double))
   => Reduce (Cyc t m Double) (Cyc t m (RRq q Double)) where
   reduce = fmapCyc Nothing reduce
 
@@ -956,10 +969,10 @@ instance (Correct gad (ZqBasic q z), CRTElt t (ZqBasic q z), Fact m,
 instance Correct gad (CycG t m (ZqBasic q Int64))
   => Correct gad (Cyc t m (ZqBasic q Int64)) where
 
-  -- correct = (CycZqB *** fmap CycI64) . correct @gad . fmap unCycZqB
-  correct = coerce $
-    (correct @gad :: [Cyc t m (ZqBasic q Int64)]
-                  -> (Cyc t m (ZqBasic q Int64), [Cyc t m Int64]))
+  correct = (CycZqB *** fmap CycI64) . correct @gad . fmap unCycZqB
+  -- correct = coerce $
+  --   (correct @gad :: [CycG t m (ZqBasic q Int64)]
+  --                 -> (CycG t m (ZqBasic q Int64), [CycG t m Int64]))
 
 -- TODO: instance Correct gad (Cyc t m (a,b)) where
 -- seems hard; see Correct instance for pairs in Gadget.hs
@@ -1111,28 +1124,6 @@ instance (Fact m, CRTElt t Double, TensorPowDec t (RRq q Double),
   toProto (PowRRq x) = toProto $ toDec x
   toProto (DecRRq x) = toProto x
   fromProto x = DecRRq <$> fromProto x
-
----------- Instances of FoldableCyc ----------
-
-instance (Fact m, FoldableCyc (CycG t m) Double) => FoldableCyc (Cyc t m) Double where
-  foldrCyc bas f acc (CycDbl u) = foldrCyc bas f acc u
-
-instance (Fact m, FoldableCyc (CycG t m) Int64) => FoldableCyc (Cyc t m) Int64 where
-  foldrCyc bas f acc (CycI64 u) = foldrCyc bas f acc u
-
-instance (Fact m, FoldableCyc (CycG t m) (ZqBasic q z)) => FoldableCyc (Cyc t m) (ZqBasic q z) where
-  foldrCyc bas f acc (CycZqB u) = foldrCyc bas f acc u
-
--- No instance for CycPair is possible.
-
--- No instance for Cyc over Integer without TensorPowDec CT Integer, since we need to use toDec and
--- toPow as defined in CycRep.
-
-instance (Fact m, TensorPowDec t (RRq q r), Foldable (CycRep t P m), Foldable (CycRep t D m))
-    => FoldableCyc (Cyc t m) (RRq q r) where
-  foldrCyc (Just L.Pow) f acc c = foldr f acc (unCycPow c)
-  foldrCyc (Just L.Dec) f acc c = foldr f acc (unCycDec c)
-  foldrCyc Nothing f acc c      = foldrCyc (Just L.Pow) f acc c
 
 ---------- TH instances of FunctorCyc ----------
 

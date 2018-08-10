@@ -11,20 +11,22 @@ Portability : POSIX
 Key-homomorphic PRF from <http://web.eecs.umich.edu/~cpeikert/pubs/kh-prf.pdf [BP14]>.
 -}
 
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE NoImplicitPrelude    #-}
-{-# LANGUAGE PolyKinds            #-}
-{-# LANGUAGE RecordWildCards      #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Crypto.Lol.Applications.KeyHomomorphicPRF
 ( FBT(..), SFBT, SizeFBT, FBTC, singFBT
@@ -34,16 +36,16 @@ module Crypto.Lol.Applications.KeyHomomorphicPRF
 , replicate, replicateS, fromList, fromListS, split, splitS
 ) where
 
-import Control.Applicative ((<$>),(<*>))
-import Control.Monad.Random hiding (fromList, split)
-import Control.Monad.State
+import Control.Applicative    ((<$>), (<*>))
 import Control.Monad.Identity
+import Control.Monad.Random   hiding (fromList, split)
+import Control.Monad.State
 
-import Crypto.Lol hiding (replicate, head)
+import Crypto.Lol          hiding (head, replicate)
 import Crypto.Lol.Reflects
 
-import Data.Singletons.TH
 import Data.Maybe
+import Data.Singletons.TH
 
 import qualified MathObj.Matrix as M
 
@@ -56,7 +58,7 @@ singletons [d|
 
         -- promote to type family for getting number of leaves
         sizeFBT :: FBT -> Pos
-        sizeFBT Leaf = O
+        sizeFBT Leaf         = O
         sizeFBT (Intern l r) = (sizeFBT l) `addPos` (sizeFBT r)
              |]
 
@@ -73,7 +75,7 @@ newtype PRFKey n a = Key { key :: Matrix a }
 -- | Generate an @n@-dimensional secret key over @rq@.
 genKey :: forall rq rnd n . (MonadRandom rnd, Random rq, Reflects n Int)
        => rnd (PRFKey n rq)
-genKey = fmap Key $ randomMtx 1 $ proxy value (Proxy :: Proxy n)
+genKey = fmap Key $ randomMtx 1 $ value @n
 
 -- | PRF public parameters for an @n@-dimension secret key over @a@,
 -- using a gadget indicated by @gad@.
@@ -85,8 +87,8 @@ data PRFParams n gad a = Params { a0 :: (Matrix a), a1 :: (Matrix a) }
 genParams :: forall gad rq rnd n .
             (MonadRandom rnd, Random rq, Reflects n Int, Gadget gad rq)
           => rnd (PRFParams n gad rq)
-genParams = let len = length $ untag (gadget :: Tagged gad [rq])
-                n   = proxy value (Proxy :: Proxy n)
+genParams = let len = length $ gadget @gad @rq
+                n   = value @n
             in Params <$> (randomMtx n (n*len)) <*> (randomMtx n (n*len))
 
 -- | A random matrix having a given number of rows and columns.
@@ -125,9 +127,17 @@ root = root' . state'
 -- | Compute PRF state for a given tree and input, which includes \(
 -- \mathbf{A}_T(x) \) and all intermediate values (see Definition 2.1
 -- of [BP14]).
+<<<<<<< HEAD
 updateState' :: forall gad rq t n .
   (Decompose gad rq, Reduce (DecompOf rq) rq)
   => SFBT t                     -- | singleton for the tree \( T \)
+||||||| merged common ancestors
+updateState' :: forall gad rq t n . Decompose gad rq
+  => SFBT t                     -- | singleton for the tree \( T \) 
+=======
+updateState' :: forall gad rq t n . Decompose gad rq
+  => SFBT t                     -- | singleton for the tree \( T \)
+>>>>>>> ea79fa39e4e92078a7b24d25ddb9e92bf15f1702
   -> PRFParams n gad rq
   -> Maybe (PRFState' t n gad rq)
   -> BitString (SizeFBT t)      -- | input \( x \)
@@ -141,7 +151,7 @@ updateState' t p st x = case t of
                      str = updateState' r p (right' <$> st) xr
                      al   = matrix $ root' stl
                      ar   = matrix $ root' str
-                     ar'  = reduce <$> proxy (decomposeMatrix ar) (Proxy :: Proxy gad)
+                     ar'  = reduce <$> decomposeMatrix @gad ar
                  in I (BSM x (al*ar')) stl str
 
 updateState :: (Decompose gad rq, Reduce (DecompOf rq) rq)
@@ -281,8 +291,8 @@ fromList = fromListS (sing :: Sing n)
 fromListS :: SPos n -> [a] -> Maybe (Vector n a)
 fromListS n xs = case n of
   SO    -> case xs of
-             (x:[])   -> Just (Lone x)
-             _        -> Nothing
+             (x:[]) -> Just (Lone x)
+             _      -> Nothing
   SS n' -> case xs of
              (x:rest) -> (:-) x <$> fromListS n' rest
              _        -> Nothing
