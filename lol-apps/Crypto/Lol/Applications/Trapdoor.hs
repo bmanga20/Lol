@@ -19,7 +19,7 @@ Etagicient lattice trapdoor operations from <http://web.eecs.umich.edu/~cpeikert
 
 module Crypto.Lol.Applications.Trapdoor
 ( PublicKey, PublicParam(..), Trapdoor, LWEOutput, LWESecret, LWEError
-, genTrap
+, genTrap, rndTag, rndPublicParam
 , lweInv, lweRand, rndSecret
 ) where
 
@@ -114,6 +114,14 @@ rndError (PK (Param aBar) a' _) = do
   eBar <- gaussianMtx 1 $ numColumns aBar
   e'   <- gaussianMtx 1 $ numColumns a'
   return $ Err eBar e'
+
+rndTag :: (MonadRandom rnd, Random tag) => rnd tag
+rndTag = getRandom
+
+rndPublicParam :: (MonadRandom rnd, Random rq) => Int -> rnd (PublicParam rq)
+rndPublicParam mBar = do
+  pp <- M.fromList 1 mBar <$> replicateM mBar getRandom
+  return $ Param pp
 
 -- SUBROUTINES --
 
