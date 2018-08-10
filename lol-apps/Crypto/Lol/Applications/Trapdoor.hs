@@ -17,7 +17,11 @@ Etagicient lattice trapdoor operations from <http://web.eecs.umich.edu/~cpeikert
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module Crypto.Lol.Applications.Trapdoor where
+module Crypto.Lol.Applications.Trapdoor
+( PublicKey, PublicParam(..), Trapdoor, LWEOutput, LWESecret, LWEError
+, genTrap
+, lweInv, lweRand, rndSecret
+) where
 
 import Control.Applicative hiding ((*>))
 import Control.Monad.Random
@@ -85,8 +89,8 @@ lwe :: forall gad tag rq r . (Gadget gad rq, Reduce r rq, Module tag rq)
   -> LWEOutput gad rq
 lwe (PK (Param aBar) a' _) h' (Sec s) (Err eBar e') =
   let tagShift = singleRowMtx $ (h' *>) <$> gadget @gad
-      bBar = scale s aBar + (reduce <$> eBar)
-      b'   = scale s (a' + tagShift) + (reduce <$> e')
+      bBar = (reduce <$> eBar) + scale s aBar
+      b'   = (reduce <$> e') + scale s (a' + tagShift)
   in Out bBar b'
 
 lweRand :: forall gad tag cm zq rnd .
