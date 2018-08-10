@@ -127,17 +127,8 @@ root = root' . state'
 -- | Compute PRF state for a given tree and input, which includes \(
 -- \mathbf{A}_T(x) \) and all intermediate values (see Definition 2.1
 -- of [BP14]).
-<<<<<<< HEAD
-updateState' :: forall gad rq t n .
-  (Decompose gad rq, Reduce (DecompOf rq) rq)
-  => SFBT t                     -- | singleton for the tree \( T \)
-||||||| merged common ancestors
-updateState' :: forall gad rq t n . Decompose gad rq
-  => SFBT t                     -- | singleton for the tree \( T \) 
-=======
 updateState' :: forall gad rq t n . Decompose gad rq
   => SFBT t                     -- | singleton for the tree \( T \)
->>>>>>> ea79fa39e4e92078a7b24d25ddb9e92bf15f1702
   -> PRFParams n gad rq
   -> Maybe (PRFState' t n gad rq)
   -> BitString (SizeFBT t)      -- | input \( x \)
