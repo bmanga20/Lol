@@ -50,11 +50,10 @@ genTrap :: forall gad tag cm zq z rnd .
   -> rnd (Trapdoor gad (cm zq), PublicKey gad tag (cm zq))
 genTrap pp@(Param aBar) t = do
   let mBar = numColumns aBar
-      tGad = (t *>) <$> (gadget @gad)
-      tGadMtx = M.fromList 1 (length tGad) tGad
-  r :: Matrix (cm (LiftOf zq)) <- gaussianMtx mBar $ length tGad
+      tGad = singleRowMtx $ (t *>) <$> (gadget @gad)
+  r :: Matrix (cm (LiftOf zq)) <- gaussianMtx mBar $ numColumns tGad
   let r' = reduce <$> r
-  return (Trap r', PK pp (tGadMtx - aBar * r') t)
+  return (Trap r', PK pp (tGad - aBar * r') t)
 
 lweSecret :: forall gad tag rq .
   (Field tag, Ring rq, Correct gad rq, Module tag rq)
@@ -81,15 +80,17 @@ lweInv :: (Field tag, Ring (cm zq), Correct gad (cm zq), Module tag (cm zq),
   -> (LWESecret (cm zq), LWEError (cm (LiftOf zq)))
 lweInv a r h b = let s = lweSecret r h b in (s, lweError a b s)
 
-lwe :: forall gad tag rq r . (Gadget gad rq, Reduce r rq)
+lwe :: forall gad tag rq r . (Gadget gad rq, Reduce r rq, Module tag rq)
   => PublicKey gad tag rq -> tag -> LWESecret rq -> LWEError r
   -> LWEOutput gad rq
 lwe (PK (Param aBar) a' _) h' (Sec s) (Err eBar e') =
-  let tagShift = (h' *>) <$> gadget @gad
-  in Out (reduce <$> eBar + scale s aBar) (reduce <$> e' + scale s $ a' + tagShift)
+  let tagShift = singleRowMtx $ (h' *>) <$> gadget @gad
+      bBar = scale s aBar + (reduce <$> eBar)
+      b'   = scale s (a' + tagShift) + (reduce <$> e')
+  in Out bBar b'
 
 lweRand :: forall gad tag cm zq rnd .
-  (Gadget gad (cm zq), Reduce (cm (LiftOf zq)) (cm zq),
+  (Gadget gad (cm zq), Reduce (cm (LiftOf zq)) (cm zq), Module tag (cm zq),
    MonadRandom rnd, Random (cm zq), RoundedGaussianCyc cm (LiftOf zq))
   => PublicKey gad tag (cm zq) -> tag -> LWESecret (cm zq)
   -> rnd (LWEOutput gad (cm zq))
@@ -122,3 +123,6 @@ var = 1.0
 
 topRow :: Matrix a -> [a]
 topRow = head . rows
+
+singleRowMtx :: [a] -> Matrix a
+singleRowMtx a = M.fromList 1 (length a) a
