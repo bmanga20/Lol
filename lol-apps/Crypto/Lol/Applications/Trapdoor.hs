@@ -88,9 +88,9 @@ lwe (PK (Param aBar) a' _) h' (Sec s) (Err eBar e') =
   let tagShift = (h' *>) <$> gadget @gad
   in Out (reduce <$> eBar + scale s aBar) (reduce <$> e' + scale s $ a' + tagShift)
 
-lweRand :: forall gad tag cm zq z rnd .
-  (Gadget gad (cm zq), Reduce (cm z) (cm zq),
-   MonadRandom rnd, Random (cm zq), RoundedGaussianCyc cm zq)
+lweRand :: forall gad tag cm zq rnd .
+  (Gadget gad (cm zq), Reduce (cm (LiftOf zq)) (cm zq),
+   MonadRandom rnd, Random (cm zq), RoundedGaussianCyc cm (LiftOf zq))
   => PublicKey gad tag (cm zq) -> tag -> LWESecret (cm zq)
   -> rnd (LWEOutput gad (cm zq))
 lweRand a h' s = do
@@ -103,8 +103,8 @@ rndSecret = do
   s <- roundedGaussian var
   return $ Sec s
 
-rndError :: (MonadRandom rnd, RoundedGaussianCyc cm zq)
-  => PublicKey gad tag (cm zq) -> rnd (LWEError (cm zq))
+rndError :: (MonadRandom rnd, RoundedGaussianCyc cm (LiftOf zq))
+  => PublicKey gad tag (cm zq) -> rnd (LWEError (cm (LiftOf zq)))
 rndError (PK (Param aBar) a' _) = do
   eBar <- gaussianMtx 1 $ numColumns aBar
   e'   <- gaussianMtx 1 $ numColumns a'
