@@ -41,7 +41,7 @@ data    LWEError rq          = Err   { eBar    :: Matrix rq
 
 -- METHODS --
 
-genTrap :: forall gad tag cm zq z rnd .
+genTrap :: forall gad tag cm zq rnd .
   (Reduce (cm (LiftOf zq)) (cm zq),
    Ring (cm zq), Module tag (cm zq), Gadget gad (cm zq),
    RoundedGaussianCyc cm (LiftOf zq), MonadRandom rnd)
@@ -91,14 +91,14 @@ lwe (PK (Param aBar) a' _) h' (Sec s) (Err eBar e') =
 
 lweRand :: forall gad tag cm zq rnd .
   (Gadget gad (cm zq), Reduce (cm (LiftOf zq)) (cm zq), Module tag (cm zq),
-   MonadRandom rnd, Random (cm zq), RoundedGaussianCyc cm (LiftOf zq))
+   MonadRandom rnd, RoundedGaussianCyc cm (LiftOf zq))
   => PublicKey gad tag (cm zq) -> tag -> LWESecret (cm zq)
   -> rnd (LWEOutput gad (cm zq))
 lweRand a h' s = do
   e <- rndError a
   return $ lwe a h' s e
 
-rndSecret :: (MonadRandom rnd, Random (cm zq), RoundedGaussianCyc cm zq)
+rndSecret :: (MonadRandom rnd, RoundedGaussianCyc cm zq)
   => rnd (LWESecret (cm zq))
 rndSecret = do
   s <- roundedGaussian var
