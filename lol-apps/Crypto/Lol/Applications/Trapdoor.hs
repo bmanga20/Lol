@@ -55,25 +55,26 @@ genTrap :: forall gad tag cm zq rnd .
 genTrap pp@(Param aBar) t = do
   let mBar = numColumns aBar
       tGad = singleRowMtx $ (t *>) <$> (gadget @gad)
+  rBar :: Matrix (cm (LiftOf zq)) <- gaussianMtx mBar $ numColumns tGad
   r :: Matrix (cm (LiftOf zq)) <- gaussianMtx mBar $ numColumns tGad
-  let r' = reduce <$> r
-  return (Trap r', PK pp (tGad - aBar * r') t)
+  let (rBar', r') = (reduce <$> rBar, reduce <$> r)
+  return (Trap rBar', PK pp (tGad - aBar * rBar' - r') t)
 
 lweSecret :: forall gad tag rq .
   (Field tag, Ring rq, Correct gad rq, Module tag rq)
   => Trapdoor gad rq -> tag -> LWEOutput gad rq
   -> LWESecret rq
-lweSecret (Trap r) h (Out bBar b') =
-  let s' = fst $ correct @gad $ topRow (bBar * r + b')
+lweSecret (Trap rBar) h (Out bBar b') =
+  let s' = fst $ correct @gad $ topRow (bBar * rBar + b')
   in Sec $ recip h *> s'
 
 lweError :: (LiftCyc cm zq, Ring (cm zq))
   => PublicKey gad tag (cm zq) -> LWEOutput gad (cm zq) -> LWESecret (cm zq)
   -> LWEError (cm (LiftOf zq))
 lweError (PK (Param aBar) a' _) (Out bBar b') (Sec s) =
-  let bBarLift = liftDec <$> (bBar - scale s aBar)
-      b'Lift   = liftDec <$> (b' - scale s a')
-  in Err bBarLift b'Lift
+  let eBar = liftDec <$> (bBar - scale s aBar)
+      e'   = liftDec <$> (b' - scale s a')
+  in Err eBar e'
 
 lweInv :: (Field tag, Ring (cm zq), Correct gad (cm zq), Module tag (cm zq),
            LiftCyc cm zq)
@@ -82,7 +83,7 @@ lweInv :: (Field tag, Ring (cm zq), Correct gad (cm zq), Module tag (cm zq),
   -> tag
   -> LWEOutput gad (cm zq)
   -> (LWESecret (cm zq), LWEError (cm (LiftOf zq)))
-lweInv a r h b = let s = lweSecret r h b in (s, lweError a b s)
+lweInv a rBar h b = let s = lweSecret rBar h b in (s, lweError a b s)
 
 lwe :: forall gad tag rq r . (Gadget gad rq, Reduce r rq, Module tag rq)
   => PublicKey gad tag rq -> tag -> LWESecret rq -> LWEError r
@@ -101,6 +102,16 @@ lweRand :: forall gad tag cm zq rnd .
 lweRand a h' s = do
   e <- rndError a
   return $ lwe a h' s e
+
+lweRand' :: forall gad tag cm zq rnd .
+  (Gadget gad (cm zq), Reduce (cm (LiftOf zq)) (cm zq), Module tag (cm zq),
+   MonadRandom rnd, RoundedGaussianCyc cm zq, RoundedGaussianCyc cm (LiftOf zq))
+  => PublicKey gad tag (cm zq) -> tag
+  -> rnd (LWESecret (cm zq), LWEOutput gad (cm zq))
+lweRand' a h' = do
+  s <- rndSecret
+  lweOut <- lweRand a h' s
+  return $ (s, lweOut)
 
 rndSecret :: (MonadRandom rnd, RoundedGaussianCyc cm zq)
   => rnd (LWESecret (cm zq))
